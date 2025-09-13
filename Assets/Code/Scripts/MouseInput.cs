@@ -4,17 +4,15 @@ using UnityEngine;
 
 public class MouseInput : MonoBehaviour
 {
-    [SerializeField] private float _strength;
+    [SerializeField] private float _strength;           // Define strength params
     [SerializeField] private float _maxStrength = 90f;
-    [SerializeField] private float _initialTime = 1.7f; // internal countdown to measure shot time limit
-    [SerializeField] private float _remainingTime;      // internal countdown to measure shot time limit
-    [SerializeField] private bool _shotEnded;
-    [SerializeField] private bool _shotStarted;
+    [SerializeField] private float _initialTime = 5.7f; // Define countdown params
+    [SerializeField] private float _remainingTime;
+    [SerializeField] private bool _shotEnded;           // Define shot params
 
     void Start()
     {
-        Cursor.lockState = CursorLockMode.Locked;
-        _remainingTime = _initialTime;
+        _remainingTime = _initialTime;                  // Setup countdown
     }
 
     // Update is called once per frame
@@ -24,40 +22,34 @@ public class MouseInput : MonoBehaviour
 
         if (_shotEnded) return;
 
-        if (Input.GetMouseButton(0))
+        if (Input.GetMouseButton(0))                // When LMB down init shooting strength computation
         {
-            _shotStarted = true;
+            if (ComputeStrength() == 0) return;
+            /* If player puts strength init internal countdown to let him choose the strength.
+             Only Y axis positive values are taken */
             CountDown();
-            if (_remainingTime > 0)
-            {
-                ComputeStrength();
-                return;
-            }
+            if (_remainingTime > 0) return;         // If player takes too much time shot is taken automatically
 
             ShootAndResetParams();
-            return;
-        } 
-        
-        if (_strength == 0)
-        {
-            if (_shotStarted) RestartShot();
-        }
-        else ShootAndResetParams();
+        } else if (_strength > 0)
+            ShootAndResetParams();                  // When player releases LMB shot is taken
     }
 
-    void ComputeStrength()
+    float ComputeStrength()
     {
-        _strength += Input.GetAxis("Mouse Y");
-
-        if (_strength < 0) _strength = 0;
-        if (_strength > _maxStrength) _strength = _maxStrength;
+        float newY = Input.GetAxis("Mouse Y");
+        if (newY > 0)
+        {
+            _strength += newY;
+            if (_strength > _maxStrength) _strength = _maxStrength;
+        }
+        return _strength;
     }
 
     void RestartShot()
     {
         _remainingTime = _initialTime;
         _shotEnded = false;
-        _shotStarted = false;
     }
 
     void CountDown()
@@ -75,7 +67,6 @@ public class MouseInput : MonoBehaviour
     void ResetParams()
     {
         _shotEnded = true;
-        _shotStarted = false;
         _strength = 0;
         _remainingTime = 0;
     }

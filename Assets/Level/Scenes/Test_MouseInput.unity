@@ -222,10 +222,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _strength: 0
   _maxStrength: 90
-  _initialTime: 1.7
+  _initialTime: 5.7
   _remainingTime: 0
   _shotEnded: 0
-  _shotStarted: 0
 --- !u!1 &301914672
 GameObject:
   m_ObjectHideFlags: 0
