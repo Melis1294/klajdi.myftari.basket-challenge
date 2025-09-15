@@ -13,6 +13,7 @@ public class GameManager : MonoBehaviour
     // Start is called before the first frame update
     private void Awake()
     {
+        // Get shooting zones
         int childCount = ShootingZone.childCount;
         _shootingZones = new Transform[childCount];
 
@@ -24,24 +25,23 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-        _characterInstance = Instantiate(MainCharacter, _shootingZones[currentPosition].position, Quaternion.identity);
+        _characterInstance = Instantiate(MainCharacter, _shootingZones[currentPosition].position, Quaternion.Euler(0, 180f, 0));
 
     }
 
     // Update is called once per frame
     void Update()
     {
+        // Manage player spawn among shooting zones
         if (Input.GetKeyUp(KeyCode.Space))
         {
             currentPosition++;
             if (currentPosition >= _shootingZones.Length) currentPosition = 0;
             Vector3 newShootingZone = _shootingZones[currentPosition].position;
             _characterInstance.position = new Vector3(newShootingZone.x, 0f, newShootingZone.z);
-            //Transform camera = _characterInstance.GetChild(0).transform.GetChild(0).transform;
-            //camera.LookAt(HopBasket);
             Vector3 direction = HopBasket.position - _characterInstance.position;
             direction.y = 0;
-            _characterInstance.rotation = Quaternion.LookRotation(-direction);
+            _characterInstance.rotation = Quaternion.LookRotation(direction);
         }
     }
 }
