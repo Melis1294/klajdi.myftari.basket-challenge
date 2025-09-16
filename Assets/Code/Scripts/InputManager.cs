@@ -122,7 +122,7 @@ public class InputManager : MonoBehaviour
         return _strength;
     }
 
-    void RestartShot()
+    public void RestartShot()
     {
         _remainingTime = _initialTime;
         _shotEnded = false;
@@ -137,6 +137,7 @@ public class InputManager : MonoBehaviour
     void ShootAndResetParams()
     {
         Debug.LogWarning("SHOOOTING AT " + _strength + " SPEED!!!");
+        GameManager.instance.OnBallShot(_strength);
         ResetParams();
     }
 
