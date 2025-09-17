@@ -7,6 +7,7 @@ TagManager:
   - Ground
   - Rim
   - Backboard
+  - Hoop
   layers:
   - Default
   - TransparentFX

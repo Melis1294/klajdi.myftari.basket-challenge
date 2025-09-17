@@ -81,7 +81,7 @@ public class GameManager : MonoBehaviour
         // Manage player spawn among shooting zones
         //if (Input.GetKeyUp(KeyCode.Space)) elapsed = 0;
 
-        if (Input.GetKeyUp(KeyCode.LeftControl)) UpdatePosition();
+        //if (Input.GetKeyUp(KeyCode.LeftControl)) UpdatePosition();
 
         // ball in the air
         if (elapsed < duration) ComputeFlight();
@@ -151,15 +151,14 @@ public class GameManager : MonoBehaviour
     public void ResetGameState()
     {
         Debug.LogWarning("Reset!!");
+        CameraController.instance.ResetCamera();
         UpdatePosition();
         InputManager.instance.RestartShot();
         BallController.instance.ResetState();
-        HoopController.instance.ResetState();
     }
 
     public void Win(int points)
     {
         Debug.LogError("Payer scored " + points + " points!");
-        //ResetGameState();
     }
 }

@@ -138,6 +138,7 @@ public class InputManager : MonoBehaviour
     {
         Debug.LogWarning("SHOOOTING AT " + _strength + " SPEED!!!");
         GameManager.instance.OnBallShot(_strength);
+        CameraController.instance.StartMoving();
         ResetParams();
     }
 
