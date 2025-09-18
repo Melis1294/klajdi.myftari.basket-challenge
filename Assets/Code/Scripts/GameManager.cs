@@ -5,11 +5,12 @@ using UnityEngine;
 public class GameManager : MonoBehaviour
 {
     public Transform HoopBasket;
+    public Transform Backboard;
     public Transform ShootingZone;
     [SerializeField] private Transform mainCharacter;
     [SerializeField] int currentPosition = 0;
     [SerializeField] private GameObject ball;
-    [SerializeField] private float _fallSpeed = 0.2f;
+    [SerializeField] private float _fallSpeed = 1.8f; //0.2f;
     private Transform _characterInstance;
     private Transform[] _shootingZones;
     private GameObject _ballInstance;
@@ -20,6 +21,17 @@ public class GameManager : MonoBehaviour
     private Vector3 endPos;
     private Rigidbody ballRb;
     public static GameManager instance { get; private set; }
+    private bool _canStartGame;
+
+    [SerializeField] float minHoopSpeed = 40;
+    [SerializeField] float maxHoopSpeed = 50;
+    [SerializeField] float minBackboardSpeed = 70;
+    [SerializeField] float maxBackboardSpeed = 75;
+    private float _diversion = 0;
+    private float _shootingSpeed;
+    //private int _backboardScore = 8;
+
+    [SerializeField] private float totalScore;
 
     // Start is called before the first frame update
     private void Awake()
@@ -48,6 +60,8 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         _characterInstance = Instantiate(mainCharacter, _shootingZones[currentPosition].position, Quaternion.Euler(0, 180f, 0));
+        //HoopBasket = Backboard;
+        //arcHeight = 1.5f;
         SpawnBall();
     }
 
@@ -64,8 +78,8 @@ public class GameManager : MonoBehaviour
         }
 
         // Initialize positions
-        startPos = ballPosition;
         endPos = HoopBasket.position;
+        startPos = ballPosition;
 
         // Midpoint raised in Y for arc
         ballRb = _ballInstance.GetComponent<Rigidbody>();
@@ -135,7 +149,7 @@ public class GameManager : MonoBehaviour
         // Ball reached the hoop
         if (elapsed >= duration)
         {
-            ballRb.velocity = Vector3.one * _fallSpeed;
+            ballRb.velocity = (_shootingSpeed >= minBackboardSpeed) ? (Vector3.forward * _fallSpeed) : (Vector3.down * _fallSpeed); // Vector3.forward * _fallSpeed; //Vector3.one * _fallSpeed;
             ballRb.useGravity = true; // hand control back to physics
         }
     }
@@ -143,10 +157,43 @@ public class GameManager : MonoBehaviour
     public void OnBallShot(float shootingSpeed)
     {
         // Compute shot logic to the score
-        Debug.Log("GameManager: Ball was shot!");
+        Debug.Log("GameManager: Ball was shot at the speed: " + shootingSpeed);
+        _shootingSpeed = shootingSpeed;
+        UpdateTarget(shootingSpeed);
         elapsed = 0;
     }
 
+    private void UpdateTarget(float shootingSpeed)
+    {
+        _diversion = 0;
+        bool isHoopSpeed = (shootingSpeed >= minHoopSpeed && shootingSpeed <= maxHoopSpeed);
+        bool isBackboardSpeed = (shootingSpeed >= minBackboardSpeed && shootingSpeed <= maxBackboardSpeed);
+        
+        if (isBackboardSpeed) 
+        { 
+            endPos = Backboard.position;
+        } else if (isHoopSpeed)
+        {
+            endPos = HoopBasket.position;
+        }
+        else if (shootingSpeed > maxBackboardSpeed)
+        {
+            endPos = Backboard.position;
+            _diversion = 0.8f;
+        } else
+        {
+            bool isAlmostHoopSpeed = (shootingSpeed > maxHoopSpeed && (shootingSpeed - maxHoopSpeed) <= 5f)
+                || (shootingSpeed < minHoopSpeed && (minHoopSpeed - shootingSpeed) <= 5f);
+            _diversion = isAlmostHoopSpeed ? 0.2f : 0.8f;
+        }
+
+        if (_diversion == 0) return;
+
+        int sign = Random.value < 0.5f ? -1 : 1;
+        int axis = Random.value < 0.5f ? -1 : 1;
+        if (axis == -1) endPos.x += (_diversion * sign);
+        if (axis == 1) endPos.z += (_diversion * sign);
+    }
 
     public void ResetGameState()
     {
@@ -160,5 +207,30 @@ public class GameManager : MonoBehaviour
     public void Win(int points)
     {
         Debug.LogError("Payer scored " + points + " points!");
+        totalScore += points;
     }
+
+    public void GamOver()
+    {
+        // TODO: manage last shot score
+        _canStartGame = false;
+        Debug.LogError("Game Over!");
+        Debug.LogError("Total score: " + totalScore);
+    }
+
+    public void StartGame()
+    {
+        _canStartGame = true;
+        Debug.LogError("Start!!!");
+    }
+
+    public bool CanStartGame()
+    {
+        return _canStartGame;
+    }
+
+    //public int GetBackboardScore()
+    //{
+    //    return _backboardScore;
+    //}
 }

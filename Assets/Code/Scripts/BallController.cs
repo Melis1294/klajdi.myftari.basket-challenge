@@ -7,8 +7,10 @@ public class BallController : MonoBehaviour
     public static BallController instance { get; private set; }
     private bool _hoopEntered;
     private bool _rimWasTouched;
+    private bool _backboardWasTouched;
     private string _hoopTag = "Hoop";
     private string _rimTag = "Rim";
+    private string _backboardTag = "Backboard";
     private string _groundTag = "Ground";
 
     private void Awake()
@@ -49,6 +51,7 @@ public class BallController : MonoBehaviour
     {
         _hoopEntered = false;
         _rimWasTouched = false;
+        _backboardWasTouched = false;
     }
 
     // Start is called before the first frame update
@@ -67,14 +70,25 @@ public class BallController : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        if (other.CompareTag(_backboardTag) && !_backboardWasTouched)
+        {
+            _backboardWasTouched = true;
+            return;
+        }
+
         if (!other.CompareTag(_hoopTag) || _hoopEntered) return;
+        
         int points = 3;
+        if (_backboardWasTouched)
+        {
+            points = BackboardController.instance.GetValue();
+        }
         if (_rimWasTouched)
         {
             Debug.LogError("2 Points!!!");
             points = 2;
         }
-        else
+        else // clean shot!
             Debug.LogError("3 Points!!!");
 
         _hoopEntered = true;

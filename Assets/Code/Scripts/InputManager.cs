@@ -51,6 +51,8 @@ public class InputManager : MonoBehaviour
 #if UNITY_IOS || UNITY_ANDROID                      // Touch controls
         if (Input.touchCount > 0)
         {
+            if (!GameManager.instance.CanStartGame()) return;
+
             if (ManageTouchInput() == 0) return;
             CountDown();
             if (_remainingTime > 0) return;
@@ -61,6 +63,8 @@ public class InputManager : MonoBehaviour
 #else                                               // MOuse controls
         if (Input.GetMouseButton(0))                // When LMB down init shooting strength computation
         {
+            if (!GameManager.instance.CanStartGame()) return;
+
             if (ManageMouseInput() == 0) return;
             CountDown();
             if (_remainingTime > 0) return;
@@ -136,7 +140,6 @@ public class InputManager : MonoBehaviour
 
     void ShootAndResetParams()
     {
-        Debug.LogWarning("SHOOOTING AT " + _strength + " SPEED!!!");
         GameManager.instance.OnBallShot(_strength);
         CameraController.instance.StartMoving();
         ResetParams();

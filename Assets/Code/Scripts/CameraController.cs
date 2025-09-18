@@ -61,7 +61,7 @@ public class CameraController : MonoBehaviour
         Vector3 targetPos = new Vector3(horizontalPos.x, y, horizontalPos.z);
 
         // Add smooth movement transition
-        float smoothSpeed = 8f; // tweak this value (higher = snappier)
+        float smoothSpeed = 5f; // tweak this value (higher = snappier)
         transform.position = Vector3.Lerp(transform.position, targetPos, Time.deltaTime * smoothSpeed);
     }
 
