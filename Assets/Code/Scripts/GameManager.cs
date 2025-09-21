@@ -103,7 +103,6 @@ public class GameManager : MonoBehaviour
 
     void UpdatePosition()
     {
-        currentPosition++;
         if (currentPosition >= _shootingZones.Length) currentPosition = 0;
         Vector3 newShootingZone = _shootingZones[currentPosition].position;
         _characterInstance.position = new Vector3(newShootingZone.x, 0f, newShootingZone.z);
@@ -208,6 +207,7 @@ public class GameManager : MonoBehaviour
     {
         Debug.LogError("Payer scored " + points + " points!");
         totalScore += points;
+        currentPosition++; // Update player position for next shot
     }
 
     public void GamOver()

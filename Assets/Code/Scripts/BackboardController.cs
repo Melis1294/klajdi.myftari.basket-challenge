@@ -76,7 +76,7 @@ public class BackboardController : MonoBehaviour
         }
     }
 
-    void ResetValue()
+    public void ResetValue()
     {
         currentValue = baseValue;
         isUpgraded = false;

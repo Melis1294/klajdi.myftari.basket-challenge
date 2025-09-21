@@ -63,6 +63,12 @@ public class BallController : MonoBehaviour
             return;
         }
 
+        if (collision.collider.CompareTag(_backboardTag) && !_backboardWasTouched)
+        {
+            _backboardWasTouched = true;
+            return;
+        }
+
         if (!collision.collider.transform.parent.CompareTag(_rimTag) || _rimWasTouched) return;
         Debug.LogWarning("Rim touched!!!");
         _rimWasTouched = true;
@@ -70,18 +76,13 @@ public class BallController : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag(_backboardTag) && !_backboardWasTouched)
-        {
-            _backboardWasTouched = true;
-            return;
-        }
-
         if (!other.CompareTag(_hoopTag) || _hoopEntered) return;
         
         int points = 3;
         if (_backboardWasTouched)
         {
             points = BackboardController.instance.GetValue();
+            BackboardController.instance.ResetValue(); // Reset backboard bonus after scoring
         }
         if (_rimWasTouched)
         {
