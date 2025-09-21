@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class InputManager : MonoBehaviour
 {
@@ -15,6 +16,9 @@ public class InputManager : MonoBehaviour
     [SerializeField] private float _mosueSpeedMultiply = 2.3f;
     private Vector2 _startTouchPos;
     private Vector2 _endTouchPos;
+    #endregion
+    #region UI
+    [SerializeField] TextMeshProUGUI strenthText;
     #endregion
     public static InputManager instance { get; private set; }
 
@@ -36,6 +40,7 @@ public class InputManager : MonoBehaviour
     void Start()
     {
         _remainingTime = _initialTime;                  // Setup countdown
+        UpdateShotUI();
     }
 
     void Update()
@@ -73,7 +78,6 @@ public class InputManager : MonoBehaviour
         } else if (_strength > 0)
             ShootAndResetParams();
 #endif
-
     }
 
     float ManageTouchInput()
@@ -123,12 +127,16 @@ public class InputManager : MonoBehaviour
             _strength += value;
             if (_strength > _maxStrength) _strength = _maxStrength;
         }
+
+        UpdateShotUI(Mathf.Round(_strength * 100) / 100.0);
+
         return _strength;
     }
 
     public void RestartShot()
     {
         _remainingTime = _initialTime;
+        UpdateShotUI();
         _shotEnded = false;
     }
 
@@ -150,5 +158,10 @@ public class InputManager : MonoBehaviour
         _shotEnded = true;
         _strength = 0;
         _remainingTime = 0;
+    }
+
+    void UpdateShotUI(double strength = 0)
+    {
+        strenthText.text = string.Format("70-75\n40-50\n{0}", strength);
     }
 }

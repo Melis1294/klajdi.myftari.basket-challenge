@@ -1,6 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class BackboardController : MonoBehaviour
 {
@@ -10,6 +9,7 @@ public class BackboardController : MonoBehaviour
     [SerializeField] private int[] upgradeValues = { 4, 6, 8 };
     [SerializeField] private float totalTime = 60f;
     [SerializeField] private float upgradeDuration = 5f;
+    [SerializeField] private TextMeshPro bonusText;
 
     private int currentValue;
     private int upgradesDone = 0;
@@ -28,6 +28,7 @@ public class BackboardController : MonoBehaviour
         {
             instance = this;
         }
+        bonusText.enabled = isUpgraded;
     }
 
     void Start()
@@ -74,12 +75,15 @@ public class BackboardController : MonoBehaviour
             // Second upgrade happens later (40–60s)
             nextUpgradeTime = Random.Range(totalTime * 0.66f, totalTime);
         }
+        bonusText.text = string.Format("Bonus {0} points!", currentValue);
+        bonusText.enabled = isUpgraded;
     }
 
     public void ResetValue()
     {
         currentValue = baseValue;
         isUpgraded = false;
+        bonusText.enabled = isUpgraded;
         Debug.Log("Reset to base value = " + currentValue);
     }
 

@@ -895,10 +895,11 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 612375192965246484}
+  - component: {fileID: 8930361746755723398}
   - component: {fileID: 612375192965246491}
   - component: {fileID: 612375192965246490}
   - component: {fileID: 612375192965246485}
+  - component: {fileID: 6004508877146787307}
   m_Layer: 0
   m_Name: Backboard
   m_TagString: Untagged
@@ -906,21 +907,26 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &612375192965246484
-Transform:
+--- !u!224 &8930361746755723398
+RectTransform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 612375192965246487}
   m_LocalRotation: {x: 1, y: -0, z: -0, w: -0.00000008940697}
-  m_LocalPosition: {x: -0.000014639316, y: 0.0007936299, z: 0.0036057087}
+  m_LocalPosition: {x: 0, y: 0, z: 0.0036057087}
   m_LocalScale: {x: 0.0032155798, y: 0.010623158, z: 0.0012145567}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1899041655365264738}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: -0.000014639316, y: 0.0007936299}
+  m_SizeDelta: {x: 200, y: 50}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!33 &612375192965246491
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -984,6 +990,14 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 10, y: 2.2204466e-16, z: 10.000002}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!222 &6004508877146787307
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 612375192965246487}
+  m_CullTransparentMesh: 1
 --- !u!1 &612375193033216976
 GameObject:
   m_ObjectHideFlags: 0
@@ -1248,7 +1262,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 612375192168537467}
-  - {fileID: 612375192965246484}
+  - {fileID: 8930361746755723398}
   - {fileID: 612375192209651337}
   m_Father: {fileID: 1149876420198478223}
   m_RootOrder: 0

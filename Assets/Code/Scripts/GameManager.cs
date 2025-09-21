@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class GameManager : MonoBehaviour
 {
@@ -32,6 +33,7 @@ public class GameManager : MonoBehaviour
     //private int _backboardScore = 8;
 
     [SerializeField] private float totalScore;
+    [SerializeField] TextMeshProUGUI scoreText;
 
     // Start is called before the first frame update
     private void Awake()
@@ -207,6 +209,7 @@ public class GameManager : MonoBehaviour
     {
         Debug.LogError("Payer scored " + points + " points!");
         totalScore += points;
+        scoreText.text = string.Format("Score: {0}", totalScore);
         currentPosition++; // Update player position for next shot
     }
 
