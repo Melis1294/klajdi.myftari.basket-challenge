@@ -25,27 +25,6 @@ public class BallController : MonoBehaviour
             instance = this;
         }
     }
-    // Start is called before the first frame update
-    //void Start()
-    //{
-        
-    //}
-
-    //// Update is called once per frame
-    //void Update()
-    //{
-        
-    //}
-
-    //public void ShootBall()
-    //{
-
-    //}
-
-    //public void ResetPosition()
-    //{
-
-    //}
 
     public void ResetState()
     {
@@ -59,6 +38,12 @@ public class BallController : MonoBehaviour
     {
         if (collision.collider.CompareTag(_groundTag))
         {
+            if (GameManager.instance.State == GameManager.GameState.GameOver)
+            {
+                TimerController.instance.GameOver();
+                return;
+            }
+
             GameManager.instance.ResetGameState();
             return;
         }

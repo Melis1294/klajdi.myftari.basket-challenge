@@ -8,10 +8,11 @@ public class TimerController : MonoBehaviour
     public static TimerController instance { get; private set; }
 
     [SerializeField] private float startupTime;
-    [SerializeField] private float remainingTime;
+    public float RemainingTime;
     [SerializeField] private bool _gameStarted;
     [SerializeField] private TextMeshProUGUI gameTimerText;
     [SerializeField] private TextMeshProUGUI startupTimerText;
+    [SerializeField] private GameObject gameOverScreen;
 
     private void Awake()
     {
@@ -24,7 +25,9 @@ public class TimerController : MonoBehaviour
         {
             instance = this;
         }
+        gameOverScreen.SetActive(false);
     }
+
 
     private void Start() => UpdateTimersUI();
 
@@ -41,22 +44,23 @@ public class TimerController : MonoBehaviour
                 _gameStarted = true;
                 startupTime = 1;
                 UpdateTimersUI();
-                GameManager.instance.StartGame();
+                GameManager.instance.UpdateGameState(GameManager.GameState.Play);
             }
             return;
         }
 
-        if (remainingTime > 0)
+        if (RemainingTime > 0)
         {
-            remainingTime -= Time.deltaTime;
+            RemainingTime -= Time.deltaTime;
         }
-        else if (remainingTime < 0)
+        else if (RemainingTime < 0)
         {
-            remainingTime = 0;
-            GameManager.instance.GamOver();
+            RemainingTime = 0;
+            GameManager.instance.UpdateGameState(GameManager.GameState.GameOver);
+            StartCoroutine(SetupGameOver());
         }
-        int minutes = Mathf.FloorToInt(remainingTime / 60);
-        int seconds = Mathf.FloorToInt(remainingTime % 60);
+        int minutes = Mathf.FloorToInt(RemainingTime / 60);
+        int seconds = Mathf.FloorToInt(RemainingTime % 60);
         gameTimerText.text = string.Format("Time: {0:00}:{1:00}", minutes, seconds);
     }
 
@@ -64,5 +68,20 @@ public class TimerController : MonoBehaviour
     {
         gameTimerText.transform.parent.gameObject.SetActive(_gameStarted);
         startupTimerText.enabled = !_gameStarted;
+    }
+
+    IEnumerator SetupGameOver()
+    {
+        yield return new WaitForSeconds(3f);
+        GameOver();
+    }
+
+    public void GameOver()
+    {
+        TextMeshProUGUI totalScoreUI = gameOverScreen.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
+        totalScoreUI.text = string.Format("Game Over\nTotal Score: {0}", GameManager.instance.TotalScore);
+        BackboardController.instance.enabled = false;
+        gameTimerText.transform.parent.gameObject.SetActive(false);
+        gameOverScreen.SetActive(true);
     }
 }
