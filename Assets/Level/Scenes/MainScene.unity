@@ -338,6 +338,27 @@ Transform:
   m_Father: {fileID: 1375906512}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1166296226 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 40099482680284617, guid: c293442d00ecea74dbaecf7811ec1c2e, type: 3}
+  m_PrefabInstance: {fileID: 612375193326536706}
+  m_PrefabAsset: {fileID: 0}
+--- !u!54 &1166296231
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1166296226}
+  serializedVersion: 2
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!1 &1178260242
 GameObject:
   m_ObjectHideFlags: 0
@@ -701,11 +722,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   HoopBasket: {fileID: 66573623}
+  Backboard: {fileID: 1971731355}
   ShootingZone: {fileID: 1375906512}
   mainCharacter: {fileID: 7483116572789041910, guid: cc1083956f401f7438502343e9493658, type: 3}
   currentPosition: 0
   ball: {fileID: 6536287185626285137, guid: 993caf427bad3c04dad8a1628b1abdf7, type: 3}
   _fallSpeed: 0.2
+  minHoopSpeed: 40
+  maxHoopSpeed: 50
+  minBackboardSpeed: 70
+  maxBackboardSpeed: 75
+  totalScore: 0
 --- !u!1 &1708397049
 GameObject:
   m_ObjectHideFlags: 0
@@ -736,6 +763,54 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1375906512}
   m_RootOrder: 12
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1784774536
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1784774538}
+  - component: {fileID: 1784774537}
+  m_Layer: 0
+  m_Name: Timer
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1784774537
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1784774536}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dbfc8b98597302b47a7e2e1bfabec6eb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  startTime: 3
+  remainingTime: 60
+  _gameStarted: 0
+  formattedTime: 
+--- !u!4 &1784774538
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1784774536}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1831691441
 GameObject:
@@ -768,6 +843,27 @@ Transform:
   m_Father: {fileID: 1375906512}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1847245005 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 612375192965246487, guid: c293442d00ecea74dbaecf7811ec1c2e, type: 3}
+  m_PrefabInstance: {fileID: 612375193326536706}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1847245010
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1847245005}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a43a129bc736bfb45adf141cd2754a77, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  baseValue: 2
+  upgradeValues: 040000000600000008000000
+  totalTime: 60
+  upgradeDuration: 5
 --- !u!1 &1908817861
 GameObject:
   m_ObjectHideFlags: 0
@@ -926,6 +1022,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1375906512}
   m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1971731354
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1971731355}
+  m_Layer: 0
+  m_Name: BackboardTarget
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1971731355
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1971731354}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -0.00131, z: 0.00542}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 598714181}
+  m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1978424233
 GameObject:
@@ -1105,7 +1232,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 341990102013537077, guid: c293442d00ecea74dbaecf7811ec1c2e, type: 3}
       propertyPath: m_TagString
-      value: Backboard
+      value: Untagged
       objectReference: {fileID: 0}
     - target: {fileID: 612375192168537466, guid: c293442d00ecea74dbaecf7811ec1c2e, type: 3}
       propertyPath: m_TagString
@@ -1118,6 +1245,26 @@ PrefabInstance:
     - target: {fileID: 612375192209651337, guid: c293442d00ecea74dbaecf7811ec1c2e, type: 3}
       propertyPath: m_LocalPosition.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 612375192823032889, guid: c293442d00ecea74dbaecf7811ec1c2e, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 612375192965246484, guid: c293442d00ecea74dbaecf7811ec1c2e, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.00176
+      objectReference: {fileID: 0}
+    - target: {fileID: 612375192965246484, guid: c293442d00ecea74dbaecf7811ec1c2e, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.00361
+      objectReference: {fileID: 0}
+    - target: {fileID: 612375192965246485, guid: c293442d00ecea74dbaecf7811ec1c2e, type: 3}
+      propertyPath: m_Size.y
+      value: 0.3
+      objectReference: {fileID: 0}
+    - target: {fileID: 612375192965246487, guid: c293442d00ecea74dbaecf7811ec1c2e, type: 3}
+      propertyPath: m_TagString
+      value: Backboard
       objectReference: {fileID: 0}
     - target: {fileID: 612375193440037369, guid: c293442d00ecea74dbaecf7811ec1c2e, type: 3}
       propertyPath: m_TagString
