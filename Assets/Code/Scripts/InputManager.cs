@@ -1,6 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class InputManager : MonoBehaviour
 {
@@ -16,6 +15,9 @@ public class InputManager : MonoBehaviour
     private Vector2 _startTouchPos;
     private Vector2 _endTouchPos;
     #endregion
+    #region UI
+    [SerializeField] TextMeshProUGUI strengthText;
+    #endregion
     public static InputManager instance { get; private set; }
 
     // Istantiate Singleton class
@@ -30,20 +32,22 @@ public class InputManager : MonoBehaviour
         {
             instance = this;
         }
+        GameManager.OnGameStateChanged += GameManagerOnGameStateChanged;
     }
 
     // Start is called before the first frame update
     void Start()
     {
         _remainingTime = _initialTime;                  // Setup countdown
+        UpdateShotUI();
     }
 
     void Update()
     {
 #if UNITY_IOS || UNITY_ANDROID
-        if (Input.touchCount == 2 && _remainingTime == 0) RestartShot();
+        //if (Input.touchCount == 2 && _remainingTime == 0) RestartShot();
 #else
-        if (Input.GetKeyUp(KeyCode.Space) && _remainingTime == 0) RestartShot();
+        //if (Input.GetKeyUp(KeyCode.Space) && _remainingTime == 0) RestartShot();
 #endif
 
         if (_shotEnded) return;
@@ -51,8 +55,6 @@ public class InputManager : MonoBehaviour
 #if UNITY_IOS || UNITY_ANDROID                      // Touch controls
         if (Input.touchCount > 0)
         {
-            if (!GameManager.instance.CanStartGame()) return;
-
             if (ManageTouchInput() == 0) return;
             CountDown();
             if (_remainingTime > 0) return;
@@ -63,8 +65,6 @@ public class InputManager : MonoBehaviour
 #else                                               // MOuse controls
         if (Input.GetMouseButton(0))                // When LMB down init shooting strength computation
         {
-            if (!GameManager.instance.CanStartGame()) return;
-
             if (ManageMouseInput() == 0) return;
             CountDown();
             if (_remainingTime > 0) return;
@@ -73,7 +73,10 @@ public class InputManager : MonoBehaviour
         } else if (_strength > 0)
             ShootAndResetParams();
 #endif
-
+    }
+    private void OnDestroy()
+    {
+        GameManager.OnGameStateChanged -= GameManagerOnGameStateChanged;
     }
 
     float ManageTouchInput()
@@ -123,12 +126,16 @@ public class InputManager : MonoBehaviour
             _strength += value;
             if (_strength > _maxStrength) _strength = _maxStrength;
         }
+
+        UpdateShotUI(Mathf.Round(_strength * 100) / 100.0);
+
         return _strength;
     }
 
     public void RestartShot()
     {
         _remainingTime = _initialTime;
+        UpdateShotUI();
         _shotEnded = false;
     }
 
@@ -150,5 +157,20 @@ public class InputManager : MonoBehaviour
         _shotEnded = true;
         _strength = 0;
         _remainingTime = 0;
+    }
+
+    void UpdateShotUI(double strength = 0)
+    {
+        strengthText.text = string.Format("70-75\n40-50\n{0}", strength);
+    }
+    void GameManagerOnGameStateChanged(GameManager.GameState state)
+    {
+        if (state == GameManager.GameState.GameOver)
+        {
+            if (Input.GetMouseButton(0) || Input.touchCount > 0)
+                ShootAndResetParams();
+
+            strengthText.enabled = false;
+        }
     }
 }

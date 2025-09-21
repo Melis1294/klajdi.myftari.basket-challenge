@@ -9,9 +9,11 @@ public class CameraController : MonoBehaviour
     private float duration = 1.5f; // total time of flight
     private float arcHeight = 2f;  // height of the parabola
     [SerializeField] private Transform cameraStart;
-    [SerializeField] private Transform cameraEnd;
+    private Transform _cameraEnd;
     private Vector3 startPos;
     private Vector3 endPos;
+    private Vector3 adjustedEnd;
+    public float offset = 2f;
     public static CameraController instance { get; private set; }
 
     private void Awake()
@@ -26,13 +28,13 @@ public class CameraController : MonoBehaviour
         {
             instance = this;
         }
+        _cameraEnd = GameManager.instance.HoopBasket;
     }
 
     // Start is called before the first frame update
     void Start()
     {
-        startPos = cameraStart.position;
-        endPos = cameraEnd.position;
+        SetupCameraMove();
         ResetCamera();
     }
 
@@ -51,12 +53,12 @@ public class CameraController : MonoBehaviour
         // Linear interpolation in XZ
         Vector3 horizontalPos = Vector3.Lerp(
             new Vector3(startPos.x, 0, startPos.z),
-            new Vector3(endPos.x, 0, endPos.z),
+            new Vector3(adjustedEnd.x, 0, adjustedEnd.z),
             t
         );
 
         // Parabolic interpolation in Y
-        float y = Mathf.Lerp(startPos.y, endPos.y, t) + arcHeight * 4 * t * (1 - t);
+        float y = Mathf.Lerp(startPos.y, adjustedEnd.y, t) + arcHeight * 4 * t * (1 - t);
 
         Vector3 targetPos = new Vector3(horizontalPos.x, y, horizontalPos.z);
 
@@ -67,9 +69,16 @@ public class CameraController : MonoBehaviour
 
     public void StartMoving()
     {
-        startPos = cameraStart.position;
-        endPos = cameraEnd.position;
+        SetupCameraMove();
         elapsed = 0f;
+    }
+
+    private void SetupCameraMove()
+    {
+        startPos = cameraStart.position;
+        endPos = _cameraEnd.position;
+        Vector3 dir = (endPos - startPos).normalized;
+        adjustedEnd = endPos - dir * offset;
     }
 
     public void ResetCamera()

@@ -1,6 +1,6 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System;
 using UnityEngine;
+using TMPro;
 
 public class GameManager : MonoBehaviour
 {
@@ -21,7 +21,6 @@ public class GameManager : MonoBehaviour
     private Vector3 endPos;
     private Rigidbody ballRb;
     public static GameManager instance { get; private set; }
-    private bool _canStartGame;
 
     [SerializeField] float minHoopSpeed = 40;
     [SerializeField] float maxHoopSpeed = 50;
@@ -31,7 +30,13 @@ public class GameManager : MonoBehaviour
     private float _shootingSpeed;
     //private int _backboardScore = 8;
 
-    [SerializeField] private float totalScore;
+    public int TotalScore { get;  private set; }
+    [SerializeField] private TextMeshProUGUI totalScoreText;
+    [SerializeField] private TextMeshPro scoreText;
+
+    // Game State
+    public GameState State;
+    public static event Action<GameState> OnGameStateChanged;
 
     // Start is called before the first frame update
     private void Awake()
@@ -46,6 +51,7 @@ public class GameManager : MonoBehaviour
         {
             instance = this;
         }
+        UpdateGameState(GameState.Startup);
 
         // Get shooting zones
         int childCount = ShootingZone.childCount;
@@ -92,11 +98,6 @@ public class GameManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        // Manage player spawn among shooting zones
-        //if (Input.GetKeyUp(KeyCode.Space)) elapsed = 0;
-
-        //if (Input.GetKeyUp(KeyCode.LeftControl)) UpdatePosition();
-
         // ball in the air
         if (elapsed < duration) ComputeFlight();
     }
@@ -188,8 +189,8 @@ public class GameManager : MonoBehaviour
 
         if (_diversion == 0) return;
 
-        int sign = Random.value < 0.5f ? -1 : 1;
-        int axis = Random.value < 0.5f ? -1 : 1;
+        int sign = UnityEngine.Random.value < 0.5f ? -1 : 1;
+        int axis = UnityEngine.Random.value < 0.5f ? -1 : 1;
         if (axis == -1) endPos.x += (_diversion * sign);
         if (axis == 1) endPos.z += (_diversion * sign);
     }
@@ -197,6 +198,7 @@ public class GameManager : MonoBehaviour
     public void ResetGameState()
     {
         Debug.LogWarning("Reset!!");
+        scoreText.gameObject.SetActive(false);
         CameraController.instance.ResetCamera();
         UpdatePosition();
         InputManager.instance.RestartShot();
@@ -206,31 +208,42 @@ public class GameManager : MonoBehaviour
     public void Win(int points)
     {
         Debug.LogError("Payer scored " + points + " points!");
-        totalScore += points;
+        scoreText.text = string.Format("{0} points!", points);
+        scoreText.gameObject.SetActive(true);
+        TotalScore += points;
+        totalScoreText.text = string.Format("Score: {0}", TotalScore);
         currentPosition++; // Update player position for next shot
     }
 
-    public void GamOver()
+    public void UpdateGameState(GameState newState)
     {
-        // TODO: manage last shot score
-        _canStartGame = false;
-        Debug.LogError("Game Over!");
-        Debug.LogError("Total score: " + totalScore);
+        switch (newState)
+        {
+            case GameState.Startup:
+                InputManager.instance.enabled = false;
+                break;
+            case GameState.Play:
+                InputManager.instance.enabled = true;
+                break;
+            case GameState.Pause:
+                InputManager.instance.enabled = false;
+                break;
+            case GameState.GameOver:
+                InputManager.instance.enabled = false;
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(newState), newState, null);
+        }
+
+        State = newState;
+        OnGameStateChanged?.Invoke(newState);
     }
 
-    public void StartGame()
+    public enum GameState
     {
-        _canStartGame = true;
-        Debug.LogError("Start!!!");
+        Startup,
+        Play,
+        Pause,
+        GameOver
     }
-
-    public bool CanStartGame()
-    {
-        return _canStartGame;
-    }
-
-    //public int GetBackboardScore()
-    //{
-    //    return _backboardScore;
-    //}
 }
