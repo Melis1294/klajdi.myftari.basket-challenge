@@ -2553,7 +2553,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   startupTime: 4
-  RemainingTime: 5
+  RemainingTime: 60
   _gameStarted: 0
   gameTimerText: {fileID: 1391100949}
   startupTimerText: {fileID: 1088060874}
