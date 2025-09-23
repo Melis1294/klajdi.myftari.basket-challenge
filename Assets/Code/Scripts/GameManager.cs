@@ -5,6 +5,7 @@ using TMPro;
 public class GameManager : MonoBehaviour
 {
     public Transform HoopBasket;
+    public Transform CameraTarget;
     public Transform Backboard;
     public Transform ShootingZone;
     [SerializeField] private Transform mainCharacter;

@@ -28,7 +28,7 @@ public class CameraController : MonoBehaviour
         {
             instance = this;
         }
-        _cameraEnd = GameManager.instance.HoopBasket;
+        _cameraEnd = GameManager.instance.CameraTarget;
     }
 
     // Start is called before the first frame update

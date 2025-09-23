@@ -56,6 +56,7 @@ public class InputManager : MonoBehaviour
         if (Input.touchCount > 0)
         {
             if (ManageTouchInput() == 0) return;
+            // Start each shot countdown when player applies min srength
             CountDown();
             if (_remainingTime > 0) return;
             ShootAndResetParams();
@@ -96,7 +97,7 @@ public class InputManager : MonoBehaviour
                 {
                     float deltaY = (touch.position.y - _startTouchPos.y) * _touchSpeedMultiply;
                     Debug.Log("Delta Y: " + deltaY);
-                    ComputeStrength(deltaY);
+                    totalStrength = ComputeStrength(deltaY);
                 }
                 break;
 
