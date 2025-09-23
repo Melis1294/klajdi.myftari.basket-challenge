@@ -47,6 +47,7 @@ public class GameManager : MonoBehaviour
             _shootingZones[i] = ShootingZone.GetChild(i);
         }
 
+        // TODO: Manage AI palyer spawn
         _characterInstance = Instantiate(mainCharacter, _shootingZones[currentPosition].position, Quaternion.Euler(0, 180f, 0));
         if (_characterInstance)
         {
@@ -74,15 +75,18 @@ public class GameManager : MonoBehaviour
     public void OnBallShot(float shootingSpeed) => _ballInstance.Shoot(shootingSpeed);
 
     // Reset game stats for next shot
+    // TODO: Manage who resets the game state (if AI don't reset camera)
     public void ResetGameState()
     {
         scoreText.gameObject.SetActive(false);
+        // TODO: Move camera out of prefab
         CameraController.Instance.ResetCamera();
         UpdatePosition();
         InputManager.Instance.RestartShot();
     }
 
     // Called on shot succeeded
+    // TODO: Manage who won the shot
     public void Win(int points)
     {
         scoreText.text = string.Format("{0} points!", points);
