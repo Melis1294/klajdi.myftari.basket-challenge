@@ -11,20 +11,6 @@ public class BallController : MonoBehaviour
     private string _rimTag = "Rim";
     private string _backboardTag = "Backboard";
     private string _groundTag = "Ground";
-    public static BallController Instance { get; private set; }
-
-    private void Awake()
-    {
-        // Prevent class instance duplicates
-        if (Instance != null && Instance != this)
-        {
-            Destroy(this);
-        }
-        else
-        {
-            Instance = this;
-        }
-    }
 
     public void ResetState()
     {
@@ -47,6 +33,7 @@ public class BallController : MonoBehaviour
 
             // Prepare next shot if game still playing
             GameManager.Instance.ResetGameState();
+            ResetState();
             return;
         }
 

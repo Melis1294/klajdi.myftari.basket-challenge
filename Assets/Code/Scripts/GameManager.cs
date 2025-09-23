@@ -10,11 +10,11 @@ public class GameManager : MonoBehaviour
     public Transform ShootingZone;
     [SerializeField] private Transform mainCharacter;
     [SerializeField] int currentPosition = 0;
-    [SerializeField] private GameObject ball;
     [SerializeField] private float _fallSpeed = 1.8f;
     private Transform _characterInstance;
     private Transform[] _shootingZones;
     private GameObject _ballInstance;
+    private Vector3 _initialBallLocalPos;
     private float _elapsed = 1.5f;
     private readonly float _duration = 1.5f; // total time of flight
     private readonly float _arcHeight = 2f;  // height of the parabola
@@ -71,19 +71,23 @@ public class GameManager : MonoBehaviour
 
     void SpawnBall()
     {
-        var ballPosition = _shootingZones[currentPosition].position;
-        ballPosition.y = ballPosition.y + 1f;
+        //var ballPosition = _shootingZones[currentPosition].position;
+        //ballPosition.y = ballPosition.y + 1f;
         if (!_ballInstance)
         {
-            _ballInstance = Instantiate(ball, ballPosition, Quaternion.identity);
-        } else
+            _ballInstance = _characterInstance.GetChild(0).gameObject; //Instantiate(ball, ballPosition, Quaternion.identity);
+            _initialBallLocalPos = _ballInstance.transform.localPosition;
+
+        }
+        else
         {
-            _ballInstance.transform.position = ballPosition;
+            _ballInstance.transform.localPosition = _initialBallLocalPos;
+            //_ballInstance.transform.position = ballPosition;
         }
 
         // Initialize positions
         _endPos = HoopBasket.position;
-        _startPos = ballPosition;
+        _startPos = _ballInstance.transform.position; //ballPosition;
 
         // Setup ball physics
         _ballRb = _ballInstance.GetComponent<Rigidbody>();
@@ -202,7 +206,6 @@ public class GameManager : MonoBehaviour
         CameraController.Instance.ResetCamera();
         UpdatePosition();
         InputManager.Instance.RestartShot();
-        BallController.Instance.ResetState();
     }
 
     // Called on shot succeeded
