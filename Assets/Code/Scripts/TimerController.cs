@@ -5,7 +5,7 @@ using TMPro;
 
 public class TimerController : MonoBehaviour
 {
-    public static TimerController instance { get; private set; }
+    public static TimerController Instance { get; private set; }
 
     [SerializeField] private float startupTime;
     public float RemainingTime;
@@ -17,24 +17,25 @@ public class TimerController : MonoBehaviour
     private void Awake()
     {
         // Prevent class instance duplicates
-        if (instance != null && instance != this)
+        if (Instance != null && Instance != this)
         {
             Destroy(this);
         }
         else
         {
-            instance = this;
+            Instance = this;
         }
         gameOverScreen.SetActive(false);
     }
 
 
+    // Show or hide startup and game timers accordingly
     private void Start() => UpdateTimersUI();
 
     // Update is called once per frame
     void Update()
     {
-        if (!_gameStarted)
+        if (!_gameStarted)  // Manage startup timer
         {
             int countdown = Mathf.FloorToInt(startupTime % 60);
             startupTimerText.text = string.Format("{0}", countdown);
@@ -44,11 +45,12 @@ public class TimerController : MonoBehaviour
                 _gameStarted = true;
                 startupTime = 1;
                 UpdateTimersUI();
-                GameManager.instance.UpdateGameState(GameManager.GameState.Play);
+                GameManager.Instance.UpdateGameState(GameManager.GameState.Play);
             }
             return;
         }
 
+        // Manage game timer
         if (RemainingTime > 0)
         {
             RemainingTime -= Time.deltaTime;
@@ -56,7 +58,7 @@ public class TimerController : MonoBehaviour
         else if (RemainingTime < 0)
         {
             RemainingTime = 0;
-            GameManager.instance.UpdateGameState(GameManager.GameState.GameOver);
+            GameManager.Instance.UpdateGameState(GameManager.GameState.GameOver);
             StartCoroutine(SetupGameOver());
         }
         int minutes = Mathf.FloorToInt(RemainingTime / 60);
@@ -70,17 +72,20 @@ public class TimerController : MonoBehaviour
         startupTimerText.enabled = !_gameStarted;
     }
 
+    // Wait until last ball is shot to show the right score
     IEnumerator SetupGameOver()
     {
         yield return new WaitForSeconds(3f);
         GameOver();
     }
 
+    // Setup Game Over UI
     public void GameOver()
     {
         TextMeshProUGUI totalScoreUI = gameOverScreen.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
-        totalScoreUI.text = string.Format("Game Over\nTotal Score: {0}", GameManager.instance.TotalScore);
-        BackboardController.instance.enabled = false;
+        totalScoreUI.text = string.Format("Game Over\nTotal Score: {0}", GameManager.Instance.TotalScore);
+        BackboardController.Instance.ResetValue();
+        BackboardController.Instance.enabled = false;
         gameTimerText.transform.parent.gameObject.SetActive(false);
         gameOverScreen.SetActive(true);
     }

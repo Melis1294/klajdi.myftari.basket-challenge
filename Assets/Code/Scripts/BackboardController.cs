@@ -3,12 +3,12 @@ using TMPro;
 
 public class BackboardController : MonoBehaviour
 {
-    public static BackboardController instance { get; private set; }
+    public static BackboardController Instance { get; private set; }
 
     [SerializeField] private int baseValue = 2;
     [SerializeField] private int[] upgradeValues = { 4, 6, 8 };
     [SerializeField] private float totalTime = 60f;
-    [SerializeField] private float upgradeDuration = 5f;
+    [SerializeField] private float upgradeDuration = 10f;
     [SerializeField] private TextMeshPro bonusText;
 
     private int currentValue;
@@ -20,13 +20,13 @@ public class BackboardController : MonoBehaviour
     private void Awake()
     {
         // Prevent class instance duplicates
-        if (instance != null && instance != this)
+        if (Instance != null && Instance != this)
         {
             Destroy(this);
         }
         else
         {
-            instance = this;
+            Instance = this;
         }
         bonusText.enabled = isUpgraded;
     }
@@ -36,7 +36,7 @@ public class BackboardController : MonoBehaviour
         currentValue = baseValue;
 
         // Schedule first upgrade randomly between 20–30s
-        nextUpgradeTime = Random.Range(totalTime * 0.33f, totalTime * 0.5f);
+        nextUpgradeTime = Random.Range(totalTime * (5f / 60f), totalTime * (10f / 60f));
     }
 
     void Update()
@@ -60,10 +60,7 @@ public class BackboardController : MonoBehaviour
     {
         // Pick upgrade from array sequentially
         if (upgradesDone < upgradeValues.Length)
-        {
             currentValue = upgradeValues[upgradesDone];
-            Debug.Log("Upgraded! Current value = " + currentValue);
-        }
 
         isUpgraded = true;
         upgradeEndTime = time + upgradeDuration;
@@ -73,7 +70,7 @@ public class BackboardController : MonoBehaviour
         if (upgradesDone < 2)
         {
             // Second upgrade happens later (40–60s)
-            nextUpgradeTime = Random.Range(totalTime * 0.66f, totalTime);
+            nextUpgradeTime = Random.Range(totalTime * (40f / 60f), totalTime);
         }
         bonusText.text = string.Format("Bonus {0} points!", currentValue);
         bonusText.enabled = isUpgraded;
@@ -84,7 +81,6 @@ public class BackboardController : MonoBehaviour
         currentValue = baseValue;
         isUpgraded = false;
         bonusText.enabled = isUpgraded;
-        Debug.Log("Reset to base value = " + currentValue);
     }
 
     public int GetValue()

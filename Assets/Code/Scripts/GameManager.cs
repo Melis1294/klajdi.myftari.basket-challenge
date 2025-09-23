@@ -5,22 +5,23 @@ using TMPro;
 public class GameManager : MonoBehaviour
 {
     public Transform HoopBasket;
+    public Transform CameraTarget;
     public Transform Backboard;
     public Transform ShootingZone;
     [SerializeField] private Transform mainCharacter;
     [SerializeField] int currentPosition = 0;
     [SerializeField] private GameObject ball;
-    [SerializeField] private float _fallSpeed = 1.8f; //0.2f;
+    [SerializeField] private float _fallSpeed = 1.8f;
     private Transform _characterInstance;
     private Transform[] _shootingZones;
     private GameObject _ballInstance;
-    private float elapsed = 1.5f;
-    private float duration = 1.5f; // total time of flight
-    private float arcHeight = 2f;  // height of the parabola
-    private Vector3 startPos;
-    private Vector3 endPos;
-    private Rigidbody ballRb;
-    public static GameManager instance { get; private set; }
+    private float _elapsed = 1.5f;
+    private readonly float _duration = 1.5f; // total time of flight
+    private readonly float _arcHeight = 2f;  // height of the parabola
+    private Vector3 _startPos;
+    private Vector3 _endPos;
+    private Rigidbody _ballRb;
+    public static GameManager Instance { get; private set; }
 
     [SerializeField] float minHoopSpeed = 40;
     [SerializeField] float maxHoopSpeed = 50;
@@ -28,7 +29,6 @@ public class GameManager : MonoBehaviour
     [SerializeField] float maxBackboardSpeed = 75;
     private float _diversion = 0;
     private float _shootingSpeed;
-    //private int _backboardScore = 8;
 
     public int TotalScore { get;  private set; }
     [SerializeField] private TextMeshProUGUI totalScoreText;
@@ -42,14 +42,14 @@ public class GameManager : MonoBehaviour
     private void Awake()
     {
         // Prevent class instance duplicates
-        if (instance != null && instance != this)
+        if (Instance != null && Instance != this)
         {
             Destroy(this);
             return;
         }
         else
         {
-            instance = this;
+            Instance = this;
         }
         UpdateGameState(GameState.Startup);
 
@@ -66,8 +66,6 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         _characterInstance = Instantiate(mainCharacter, _shootingZones[currentPosition].position, Quaternion.Euler(0, 180f, 0));
-        //HoopBasket = Backboard;
-        //arcHeight = 1.5f;
         SpawnBall();
     }
 
@@ -84,14 +82,14 @@ public class GameManager : MonoBehaviour
         }
 
         // Initialize positions
-        endPos = HoopBasket.position;
-        startPos = ballPosition;
+        _endPos = HoopBasket.position;
+        _startPos = ballPosition;
 
-        // Midpoint raised in Y for arc
-        ballRb = _ballInstance.GetComponent<Rigidbody>();
-        ballRb.useGravity = false;
-        ballRb.velocity = Vector3.zero;
-        ballRb.angularVelocity = Vector3.zero;
+        // Setup ball physics
+        _ballRb = _ballInstance.GetComponent<Rigidbody>();
+        _ballRb.useGravity = false;
+        _ballRb.velocity = Vector3.zero;
+        _ballRb.angularVelocity = Vector3.zero;
         _ballInstance.transform.LookAt(HoopBasket.transform);
     }
 
@@ -99,9 +97,10 @@ public class GameManager : MonoBehaviour
     void Update()
     {
         // ball in the air
-        if (elapsed < duration) ComputeFlight();
+        if (_elapsed < _duration) ComputeFlight();
     }
 
+    // Called on first shot setup and in next ones
     void UpdatePosition()
     {
         if (currentPosition >= _shootingZones.Length) currentPosition = 0;
@@ -115,25 +114,25 @@ public class GameManager : MonoBehaviour
 
     void ComputeFlight()
     {
-        elapsed += Time.deltaTime;
-        float t = Mathf.Clamp01(elapsed / duration);
+        _elapsed += Time.deltaTime;
+        float t = Mathf.Clamp01(_elapsed / _duration);
 
         // Linear interpolation in XZ
         Vector3 horizontalPos = Vector3.Lerp(
-            new Vector3(startPos.x, 0, startPos.z),
-            new Vector3(endPos.x, 0, endPos.z),
+            new Vector3(_startPos.x, 0, _startPos.z),
+            new Vector3(_endPos.x, 0, _endPos.z),
             t
         );
 
         // Parabolic interpolation in Y
-        float y = Mathf.Lerp(startPos.y, endPos.y, t) + arcHeight * 4 * t * (1 - t);
+        float y = Mathf.Lerp(_startPos.y, _endPos.y, t) + _arcHeight * 4 * t * (1 - t);
 
         Vector3 newPos = new Vector3(horizontalPos.x, y, horizontalPos.z);
 
         // Update rigidbody velocity
-        Vector3 displacement = newPos - ballRb.position;
+        Vector3 displacement = newPos - _ballRb.position;
         Vector3 velocity = displacement / Time.deltaTime;
-        ballRb.velocity = velocity;
+        _ballRb.velocity = velocity;
 
         // Rolling rotation
         Vector3 moveDir = displacement.normalized;
@@ -142,27 +141,28 @@ public class GameManager : MonoBehaviour
         float radius = _ballInstance.transform.localScale.x * 0.5f;
         float speed = displacement.magnitude / Time.deltaTime;
 
-        ballRb.angularVelocity = -rollAxis * (speed / radius);
+        _ballRb.angularVelocity = -rollAxis * (speed / radius);
 
-        ballRb.MovePosition(newPos); // Rigid body position update
+        _ballRb.MovePosition(newPos); // Rigid body position update
 
         // Ball reached the hoop
-        if (elapsed >= duration)
+        if (_elapsed >= _duration)
         {
-            ballRb.velocity = (_shootingSpeed >= minBackboardSpeed) ? (Vector3.forward * _fallSpeed) : (Vector3.down * _fallSpeed); // Vector3.forward * _fallSpeed; //Vector3.one * _fallSpeed;
-            ballRb.useGravity = true; // hand control back to physics
+            // Update physics according to if player is aiming for the hoop or for the backboard
+            _ballRb.velocity = (_shootingSpeed >= minBackboardSpeed) ? (Vector3.forward * _fallSpeed * 0.2f) : (Vector3.down * _fallSpeed);
+            _ballRb.useGravity = true; // Hand control back to physics
         }
     }
 
+    // Compute shot based on input strength
     public void OnBallShot(float shootingSpeed)
     {
-        // Compute shot logic to the score
-        Debug.Log("GameManager: Ball was shot at the speed: " + shootingSpeed);
         _shootingSpeed = shootingSpeed;
         UpdateTarget(shootingSpeed);
-        elapsed = 0;
+        _elapsed = 0;
     }
 
+    // Compute shot logic in relation to right values for hoop and backboard
     private void UpdateTarget(float shootingSpeed)
     {
         _diversion = 0;
@@ -171,14 +171,14 @@ public class GameManager : MonoBehaviour
         
         if (isBackboardSpeed) 
         { 
-            endPos = Backboard.position;
+            _endPos = Backboard.position;
         } else if (isHoopSpeed)
         {
-            endPos = HoopBasket.position;
+            _endPos = HoopBasket.position;
         }
         else if (shootingSpeed > maxBackboardSpeed)
         {
-            endPos = Backboard.position;
+            _endPos = Backboard.position;
             _diversion = 0.8f;
         } else
         {
@@ -191,23 +191,23 @@ public class GameManager : MonoBehaviour
 
         int sign = UnityEngine.Random.value < 0.5f ? -1 : 1;
         int axis = UnityEngine.Random.value < 0.5f ? -1 : 1;
-        if (axis == -1) endPos.x += (_diversion * sign);
-        if (axis == 1) endPos.z += (_diversion * sign);
+        if (axis == -1) _endPos.x += (_diversion * sign);
+        if (axis == 1) _endPos.z += (_diversion * sign);
     }
 
+    // Reset game stats for next shot
     public void ResetGameState()
     {
-        Debug.LogWarning("Reset!!");
         scoreText.gameObject.SetActive(false);
-        CameraController.instance.ResetCamera();
+        CameraController.Instance.ResetCamera();
         UpdatePosition();
-        InputManager.instance.RestartShot();
-        BallController.instance.ResetState();
+        InputManager.Instance.RestartShot();
+        BallController.Instance.ResetState();
     }
 
+    // Called on shot succeeded
     public void Win(int points)
     {
-        Debug.LogError("Payer scored " + points + " points!");
         scoreText.text = string.Format("{0} points!", points);
         scoreText.gameObject.SetActive(true);
         TotalScore += points;
@@ -215,27 +215,25 @@ public class GameManager : MonoBehaviour
         currentPosition++; // Update player position for next shot
     }
 
+    // Manage game states
     public void UpdateGameState(GameState newState)
     {
         switch (newState)
         {
             case GameState.Startup:
-                InputManager.instance.enabled = false;
                 break;
             case GameState.Play:
-                InputManager.instance.enabled = true;
                 break;
             case GameState.Pause:
-                InputManager.instance.enabled = false;
                 break;
             case GameState.GameOver:
-                InputManager.instance.enabled = false;
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(newState), newState, null);
         }
 
         State = newState;
+        InputManager.Instance.enabled = State == GameState.Play;
         OnGameStateChanged?.Invoke(newState);
     }
 

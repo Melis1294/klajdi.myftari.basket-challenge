@@ -4,7 +4,6 @@ using UnityEngine;
 
 public class BallController : MonoBehaviour
 {
-    public static BallController instance { get; private set; }
     private bool _hoopEntered;
     private bool _rimWasTouched;
     private bool _backboardWasTouched;
@@ -12,17 +11,18 @@ public class BallController : MonoBehaviour
     private string _rimTag = "Rim";
     private string _backboardTag = "Backboard";
     private string _groundTag = "Ground";
+    public static BallController Instance { get; private set; }
 
     private void Awake()
     {
         // Prevent class instance duplicates
-        if (instance != null && instance != this)
+        if (Instance != null && Instance != this)
         {
             Destroy(this);
         }
         else
         {
-            instance = this;
+            Instance = this;
         }
     }
 
@@ -33,18 +33,20 @@ public class BallController : MonoBehaviour
         _backboardWasTouched = false;
     }
 
-    // Start is called before the first frame update
+    // Manage collisions with ground, rim and backboard
     private void OnCollisionEnter(Collision collision)
     {
         if (collision.collider.CompareTag(_groundTag))
         {
-            if (GameManager.instance.State == GameManager.GameState.GameOver)
+            if (GameManager.Instance.State == GameManager.GameState.GameOver)
             {
-                TimerController.instance.GameOver();
+                // Last shot completed
+                TimerController.Instance.GameOver();
                 return;
             }
 
-            GameManager.instance.ResetGameState();
+            // Prepare next shot if game still playing
+            GameManager.Instance.ResetGameState();
             return;
         }
 
@@ -55,7 +57,6 @@ public class BallController : MonoBehaviour
         }
 
         if (!collision.collider.transform.parent.CompareTag(_rimTag) || _rimWasTouched) return;
-        Debug.LogWarning("Rim touched!!!");
         _rimWasTouched = true;
     }
 
@@ -63,21 +64,16 @@ public class BallController : MonoBehaviour
     {
         if (!other.CompareTag(_hoopTag) || _hoopEntered) return;
         
+        // Manage score cases if shot was scored
         int points = 3;
         if (_backboardWasTouched)
         {
-            points = BackboardController.instance.GetValue();
-            BackboardController.instance.ResetValue(); // Reset backboard bonus after scoring
+            points = BackboardController.Instance.GetValue();
+            BackboardController.Instance.ResetValue(); // Reset backboard bonus after scoring
         }
-        if (_rimWasTouched)
-        {
-            Debug.LogError("2 Points!!!");
-            points = 2;
-        }
-        else // clean shot!
-            Debug.LogError("3 Points!!!");
+        else if (_rimWasTouched) points = 2;
 
         _hoopEntered = true;
-        GameManager.instance.Win(points);
+        GameManager.Instance.Win(points);
     }
 }
