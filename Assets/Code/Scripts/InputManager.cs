@@ -3,78 +3,78 @@ using TMPro;
 
 public class InputManager : MonoBehaviour
 {
-    [SerializeField] private float _strength;           // Define strength params
-    [SerializeField] private float _maxStrength = 90f;
-    [SerializeField] private float _initialTime = 5.7f; // Define countdown params
-    [SerializeField] private float _remainingTime;
-    [SerializeField] private bool _shotEnded;           // Define shot params
+    [SerializeField] private float maxStrength = 90f;
+    [SerializeField] private float minStrength = 5f;
+    [SerializeField] private float initialTime = 5.7f; // Define countdown params
+    private float _strength;           // Define strength params
+    private bool _shotEnded;           // Define shot params
+    private float _remainingTime;
+    #region Mouse Input
+    [SerializeField] private float mosueSpeedMultiply = 2.3f;
+    #endregion
     #region Touch Input
-    [SerializeField] private bool _isSwiping;
-    [SerializeField] private float _touchSpeedMultiply = 0.002f;
-    [SerializeField] private float _mosueSpeedMultiply = 2.3f;
+    private bool _isSwiping;
+    [SerializeField] private float touchSpeedMultiply = 0.002f;
     private Vector2 _startTouchPos;
     private Vector2 _endTouchPos;
     #endregion
     #region UI
     [SerializeField] TextMeshProUGUI strengthText;
     #endregion
-    public static InputManager instance { get; private set; }
+    public static InputManager Instance { get; private set; }
 
     // Istantiate Singleton class
     private void Awake()
     {
         // Prevent class instance duplicates
-        if (instance != null && instance != this)
+        if (Instance != null && Instance != this)
         {
             Destroy(this);
         }
         else
         {
-            instance = this;
+            Instance = this;
         }
+        // Subscribe method to state change events
         GameManager.OnGameStateChanged += GameManagerOnGameStateChanged;
     }
 
     // Start is called before the first frame update
     void Start()
     {
-        _remainingTime = _initialTime;                  // Setup countdown
+        _remainingTime = initialTime;                  // Setup countdown
         UpdateShotUI();
     }
 
     void Update()
     {
-#if UNITY_IOS || UNITY_ANDROID
-        //if (Input.touchCount == 2 && _remainingTime == 0) RestartShot();
-#else
-        //if (Input.GetKeyUp(KeyCode.Space) && _remainingTime == 0) RestartShot();
-#endif
-
         if (_shotEnded) return;
 
 #if UNITY_IOS || UNITY_ANDROID                      // Touch controls
         if (Input.touchCount > 0)
         {
-            if (ManageTouchInput() == 0) return;
+            if (ManageTouchInput() <= minStrength) return;
             // Start each shot countdown when player applies min srength
             CountDown();
             if (_remainingTime > 0) return;
+            // Shoot the ball when shot countdown ends
             ShootAndResetParams();
             return;
-        } else if (_strength > 0)
+        } else if (_strength > minStrength)         // Shoot the ball on touch release
             ShootAndResetParams();
 #else                                               // MOuse controls
         if (Input.GetMouseButton(0))                // When LMB down init shooting strength computation
         {
-            if (ManageMouseInput() == 0) return;
+            if (ManageMouseInput() <= minStrength) return;
             CountDown();
             if (_remainingTime > 0) return;
             ShootAndResetParams();
             return;
-        } else if (_strength > 0)
+        } else if (_strength > minStrength)
             ShootAndResetParams();
 #endif
     }
+    // Unsubscribe method to state change events on object destroy
     private void OnDestroy()
     {
         GameManager.OnGameStateChanged -= GameManagerOnGameStateChanged;
@@ -95,8 +95,7 @@ public class InputManager : MonoBehaviour
             case TouchPhase.Moved:
                 if (_isSwiping)
                 {
-                    float deltaY = (touch.position.y - _startTouchPos.y) * _touchSpeedMultiply;
-                    Debug.Log("Delta Y: " + deltaY);
+                    float deltaY = (touch.position.y - _startTouchPos.y) * touchSpeedMultiply;
                     totalStrength = ComputeStrength(deltaY);
                 }
                 break;
@@ -104,8 +103,7 @@ public class InputManager : MonoBehaviour
             case TouchPhase.Ended:
             case TouchPhase.Canceled:
                 _endTouchPos = touch.position;
-                float totalDeltaY = (_endTouchPos.y - _startTouchPos.y) * _touchSpeedMultiply;
-                Debug.Log("Total swipe Delta Y: " + totalDeltaY);
+                float totalDeltaY = (_endTouchPos.y - _startTouchPos.y) * touchSpeedMultiply;
                 totalStrength = ComputeStrength(totalDeltaY);
                 _isSwiping = false;
                 break;
@@ -116,16 +114,16 @@ public class InputManager : MonoBehaviour
 
     float ManageMouseInput()
     {
-        float newY = Input.GetAxis("Mouse Y") * _mosueSpeedMultiply;
+        float newY = Input.GetAxis("Mouse Y") * mosueSpeedMultiply;
         return ComputeStrength(newY);
     }
 
     float ComputeStrength(float value)
     {
-        if (value > 0)
+        if (value > 0)      // Only positive values are taken
         {
             _strength += value;
-            if (_strength > _maxStrength) _strength = _maxStrength;
+            if (_strength > maxStrength) _strength = maxStrength;
         }
 
         UpdateShotUI(Mathf.Round(_strength * 100) / 100.0);
@@ -133,9 +131,10 @@ public class InputManager : MonoBehaviour
         return _strength;
     }
 
+    // Enable input params for next shot
     public void RestartShot()
     {
-        _remainingTime = _initialTime;
+        _remainingTime = initialTime;
         UpdateShotUI();
         _shotEnded = false;
     }
@@ -148,11 +147,12 @@ public class InputManager : MonoBehaviour
 
     void ShootAndResetParams()
     {
-        GameManager.instance.OnBallShot(_strength);
-        CameraController.instance.StartMoving();
+        GameManager.Instance.OnBallShot(_strength);
+        CameraController.Instance.StartMoving();
         ResetParams();
     }
 
+    // Set input disabled after shooting until next shot
     void ResetParams()
     {
         _shotEnded = true;
@@ -160,14 +160,18 @@ public class InputManager : MonoBehaviour
         _remainingTime = 0;
     }
 
+    // Manage strength UI
     void UpdateShotUI(double strength = 0)
     {
         strengthText.text = string.Format("70-75\n40-50\n{0}", strength);
     }
+
+    // Manage states change
     void GameManagerOnGameStateChanged(GameManager.GameState state)
     {
         if (state == GameManager.GameState.GameOver)
         {
+            // Shoot the ball if player is still holdin touch/mouse down but game is over
             if (Input.GetMouseButton(0) || Input.touchCount > 0)
                 ShootAndResetParams();
 

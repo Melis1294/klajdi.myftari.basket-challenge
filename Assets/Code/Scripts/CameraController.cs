@@ -5,30 +5,31 @@ using UnityEngine;
 
 public class CameraController : MonoBehaviour
 {
-    private float elapsed = 1.5f;
-    private float duration = 1.5f; // total time of flight
-    private float arcHeight = 2f;  // height of the parabola
     [SerializeField] private Transform cameraStart;
+
+    private float elapsed = 1.5f;   // Current time of flight
+    private float duration = 1.5f;  // Total time of flight
+    private float arcHeight = 2f;   // Height of the parable vertex
     private Transform _cameraEnd;
     private Vector3 startPos;
     private Vector3 endPos;
     private Vector3 adjustedEnd;
     public float offset = 2f;
-    public static CameraController instance { get; private set; }
+    public static CameraController Instance { get; private set; }
 
     private void Awake()
     {
         // Prevent class instance duplicates
-        if (instance != null && instance != this)
+        if (Instance != null && Instance != this)
         {
             Destroy(this);
             return;
         }
         else
         {
-            instance = this;
+            Instance = this;
         }
-        _cameraEnd = GameManager.instance.CameraTarget;
+        _cameraEnd = GameManager.Instance.CameraTarget;
     }
 
     // Start is called before the first frame update
