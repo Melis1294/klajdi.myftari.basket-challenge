@@ -83,7 +83,11 @@ public class TimerController : MonoBehaviour
     public void GameOver()
     {
         TextMeshProUGUI totalScoreUI = gameOverScreen.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
-        totalScoreUI.text = string.Format("Game Over\nTotal Score: {0}", GameManager.Instance.TotalScore);
+        int playerScore = GameManager.Instance.TotalScore;
+        int opponentScore = GameManager.Instance.OpponentScore;
+        // TODO: Manage even points case (+ time to win)
+        string victoryText = playerScore > opponentScore ? "You win" : "You lose";
+        totalScoreUI.text = string.Format("{0}\nTotal Score: {1} - {2}", victoryText, playerScore, opponentScore);
         BackboardController.Instance.ResetValue();
         BackboardController.Instance.enabled = false;
         gameTimerText.transform.parent.gameObject.SetActive(false);

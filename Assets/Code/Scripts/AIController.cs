@@ -37,4 +37,9 @@ public class AIController : MonoBehaviour
         float shootingSpeed = UnityEngine.Random.Range(5f, 90f);
         _ballInstance.Shoot(shootingSpeed);
     }
+
+    public void HasBall()
+    {
+        hasBall = true;
+    }
 }

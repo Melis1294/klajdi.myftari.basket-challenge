@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 public class BallController : MonoBehaviour
 {
@@ -27,6 +28,9 @@ public class BallController : MonoBehaviour
     [SerializeField] float maxBackboardSpeed = 75;
     private float _diversion = 0;
     private float _shootingSpeed;
+
+    // Event to notify AI that he has the ball again
+    public bool AIBall;
 
     private void Start()
     {
@@ -143,6 +147,10 @@ public class BallController : MonoBehaviour
         transform.position = _startPos;
         transform.LookAt(GameManager.Instance.HoopBasket.transform);
         ResetPhysics();
+
+        // Notify AI that he owns the ball again
+        AIController aiParent = transform.GetComponentInParent<AIController>();
+        if (aiParent) aiParent.HasBall();
     }
 
     void ResetPhysics()
@@ -152,6 +160,7 @@ public class BallController : MonoBehaviour
         _ballRb.angularVelocity = Vector3.zero;
     }
 
+    //TODO: Ignore collision with ai ball
     // Manage collisions with ground, rim and backboard
     private void OnCollisionEnter(Collision collision)
     {
@@ -165,7 +174,7 @@ public class BallController : MonoBehaviour
             }
 
             // Prepare next shot if game still playing
-            GameManager.Instance.ResetGameState();
+            GameManager.Instance.ResetGameState(AIBall);
             ResetState();
             return;
         }
@@ -194,6 +203,6 @@ public class BallController : MonoBehaviour
         else if (_rimWasTouched) points = 2;
 
         _hoopEntered = true;
-        GameManager.Instance.Win(points);
+        GameManager.Instance.Win(points, AIBall);
     }
 }
