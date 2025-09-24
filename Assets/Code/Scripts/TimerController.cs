@@ -85,7 +85,7 @@ public class TimerController : MonoBehaviour
         TextMeshProUGUI totalScoreUI = gameOverScreen.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
         int playerScore = GameManager.Instance.TotalScore;
         int opponentScore = GameManager.Instance.OpponentScore;
-        // TODO: Manage even points case (+ time to win)
+        // TODO: Manage even points case (+ time to win) and fix UI
         string victoryText = playerScore > opponentScore ? "You win" : "You lose";
         totalScoreUI.text = string.Format("{0}\nTotal Score: {1} - {2}", victoryText, playerScore, opponentScore);
         BackboardController.Instance.ResetValue();

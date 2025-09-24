@@ -55,7 +55,7 @@ public class GameManager : MonoBehaviour
             _shootingZones[i] = ShootingZone.GetChild(i);
         }
 
-        // TODO: Manage AI palyer spawn
+        // TODO: Manage AI palyer spawn (needs fix)
         SpawnCharacter();
         if (!_isSinglePlayer) SpawnOpponent();
     }
@@ -110,8 +110,7 @@ public class GameManager : MonoBehaviour
     // Compute shot based on input strength
     public void OnBallShot(float shootingSpeed) => _ballInstance.Shoot(shootingSpeed);
 
-    // Reset game stats for next shot
-    // TODO: Manage who resets the game state (if AI don't reset camera)
+    // Reset game stats for next shot, for AI or player
     public void ResetGameState(bool aiState)
     {
         if (!aiState)
@@ -127,8 +126,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // Called on shot succeeded
-    // TODO: Manage who won the shot
+    // Called on shot succeeded, for AI and player
     public void Win(int points, bool aiWon)
     {
         if (aiWon)

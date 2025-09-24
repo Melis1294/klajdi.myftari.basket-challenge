@@ -31,10 +31,12 @@ public class BallController : MonoBehaviour
 
     // Event to notify AI that he has the ball again
     public bool AIBall;
+    private Collider _ballCollider;
 
     private void Start()
     {
         _ballRb = GetComponent<Rigidbody>();
+        _ballCollider = GetComponent<Collider>();
         ResetState();
     }
 
@@ -160,10 +162,16 @@ public class BallController : MonoBehaviour
         _ballRb.angularVelocity = Vector3.zero;
     }
 
-    //TODO: Ignore collision with ai ball
     // Manage collisions with ground, rim and backboard
     private void OnCollisionEnter(Collision collision)
     {
+        if (collision.collider.GetComponent<BallController>())
+        {
+            Physics.IgnoreCollision(collision.collider, _ballCollider);
+            Debug.LogWarning("Collision ignored");
+            return;
+        }
+
         if (collision.collider.CompareTag(_groundTag))
         {
             if (GameManager.Instance.State == GameManager.GameState.GameOver)
