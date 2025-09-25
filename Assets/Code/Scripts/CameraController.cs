@@ -65,7 +65,7 @@ public class CameraController : MonoBehaviour
         Vector3 targetPos = new Vector3(horizontalPos.x, y, horizontalPos.z);
 
         // Add smooth movement transition
-        transform.position = Vector3.Slerp(transform.position, targetPos, Time.deltaTime * _smoothSpeed);
+        transform.position = Vector3.Lerp(transform.position, targetPos, Time.deltaTime * _smoothSpeed);
     }
 
     public void StartMoving()

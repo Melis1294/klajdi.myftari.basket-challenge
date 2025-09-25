@@ -174,11 +174,11 @@ public class BallController : MonoBehaviour
         if (collision.collider.CompareTag(_groundTag))
         {
             // Prepare next shot if game still playing
-            GameManager.Instance.ResetGameState(AIBall);
             if (_hoopEntered)
-                ResetState();
+                GameManager.Instance.ResetGameState(AIBall);
             else
                 GameManager.Instance.Lose(AIBall);  // To manage fireball counter
+            ResetState();
             return;
         }
 
