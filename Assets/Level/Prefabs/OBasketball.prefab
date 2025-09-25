@@ -91,3 +91,22 @@ SphereCollider:
   serializedVersion: 2
   m_Radius: 0.1205
   m_Center: {x: 0.000000007450581, y: 0.0000000037252903, z: 0}
+--- !u!114 &3627806365503173476
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5849473246159792786}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b6d2bd55abab99498075134f320c198, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ballStart: {fileID: 0}
+  _fallSpeed: 1.8
+  minHoopSpeed: 40
+  maxHoopSpeed: 50
+  minBackboardSpeed: 70
+  maxBackboardSpeed: 75
+  AIBall: 0
