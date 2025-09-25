@@ -16,7 +16,6 @@ public class GameManager : MonoBehaviour
     private Transform[] _shootingZones;
     private BallController _ballInstance;
     private BallController _opponentBallInstance;
-    public static GameManager Instance { get; private set; }
 
     public int TotalScore { get;  private set; }
 
@@ -37,6 +36,9 @@ public class GameManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI opponentScoreText;
     public int OpponentScore { get; private set; }
     private Transform _opponentInstance;
+    
+
+    public static GameManager Instance { get; private set; }
 
     private void Awake()
     {
@@ -164,8 +166,17 @@ public class GameManager : MonoBehaviour
             TotalScore += points;
             totalScoreText.text = string.Format("Score: {0}", TotalScore);
             currentPositionPlayer++; // Update player position for next shot
+            FireballController.Instance.UpdateFireBallCounter(points/8);
         }
     }
+
+    public void Lose(bool aiLost)
+    {
+        if (aiLost) return;
+        FireballController.Instance.UpdateFireBallCounter();   // Set Fireball counter to zero if 1 shot missed
+    }
+
+    
 
     // Manage game states
     public void UpdateGameState(GameState newState)

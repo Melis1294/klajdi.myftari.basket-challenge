@@ -175,7 +175,10 @@ public class BallController : MonoBehaviour
         {
             // Prepare next shot if game still playing
             GameManager.Instance.ResetGameState(AIBall);
-            ResetState();
+            if (_hoopEntered)
+                ResetState();
+            else
+                GameManager.Instance.Lose(AIBall);  // To manage fireball counter
             return;
         }
 
