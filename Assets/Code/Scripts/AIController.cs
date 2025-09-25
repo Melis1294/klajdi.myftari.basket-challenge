@@ -6,15 +6,15 @@ using UnityEngine;
 public class AIController : MonoBehaviour
 {
     [SerializeField] private bool hasBall;
-    private BallController _ballInstance;
+    public BallController BallInstance;
 
     // Start is called before the first frame update
-    void Start()
-    {
-        _ballInstance = transform.GetChild(0).GetComponent<BallController>();
-        if (!_ballInstance) 
-            throw new NullReferenceException("Character instance not found!");
-    }
+    //void Start()
+    //{
+    //    _ballInstance = transform.GetComponentInChildren<BallController>();
+    //    if (!_ballInstance) 
+    //        throw new NullReferenceException("Ball instance not found!");
+    //}
 
     // Update is called once per frame
     void Update()
@@ -34,8 +34,12 @@ public class AIController : MonoBehaviour
     {
         float shotCountdown = UnityEngine.Random.Range(1f, 3f);
         yield return new WaitForSeconds(shotCountdown);
-        float shootingSpeed = UnityEngine.Random.Range(5f, 90f);
-        _ballInstance.Shoot(shootingSpeed);
+        // Check if game is still on playing
+        if (GameManager.Instance.State == GameManager.GameState.Play)
+        {
+            float shootingSpeed = UnityEngine.Random.Range(5f, 90f);
+            BallInstance.Shoot(shootingSpeed);
+        }
     }
 
     public void HasBall()

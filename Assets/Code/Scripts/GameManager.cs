@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 
 public class GameManager : MonoBehaviour
@@ -10,28 +11,33 @@ public class GameManager : MonoBehaviour
     public Transform ShootingZone;
     [SerializeField] private Transform mainCharacter;
     [SerializeField] int currentPositionPlayer = 0;
+    [SerializeField] private GameObject[] balls;
     private Transform _characterInstance;
     private Transform[] _shootingZones;
     private BallController _ballInstance;
+    private BallController _opponentBallInstance;
     public static GameManager Instance { get; private set; }
 
     public int TotalScore { get;  private set; }
+
+    // UI
     [SerializeField] private TextMeshProUGUI totalScoreText;
     [SerializeField] private TextMeshPro scoreText;
+    [SerializeField] private Button endGameButton;
+    [SerializeField] private Button retryButton;
 
     // Game State
     public GameState State;
     public static event Action<GameState> OnGameStateChanged;
 
     // Game mode
-    private bool _isSinglePlayer;
-    [SerializeField] private Vector3 opponentPositionOffset = Vector3.left;
+    public bool IsSinglePlayer;
+    private Vector3 _opponentPositionOffset = new Vector3(-0.5f, 0, 0);
     [SerializeField] int currentPositionOpponent = 0;
     [SerializeField] private TextMeshProUGUI opponentScoreText;
     public int OpponentScore { get; private set; }
     private Transform _opponentInstance;
 
-    // Start is called before the first frame update
     private void Awake()
     {
         // Prevent class instance duplicates
@@ -55,9 +61,23 @@ public class GameManager : MonoBehaviour
             _shootingZones[i] = ShootingZone.GetChild(i);
         }
 
-        // TODO: Manage AI palyer spawn (needs fix)
+        // Setup Buttons
+        endGameButton.onClick.AddListener(() => SceneController.Instance.BackToMainMenu());
+        retryButton.onClick.AddListener(() => SceneController.Instance.StartGame());
+    }
+
+    private void Start()
+    {
         SpawnCharacter();
-        if (!_isSinglePlayer) SpawnOpponent();
+        int[] totalScores = SceneController.Instance.GetScores();
+        TotalScore = totalScores[0];
+        totalScoreText.text = string.Format("Score: {0}", TotalScore);
+        if (!IsSinglePlayer) {
+            OpponentScore = totalScores[1];
+            opponentScoreText.text = string.Format("AI Score: {0}", OpponentScore);
+            SpawnOpponent(); 
+        }
+        opponentScoreText.gameObject.SetActive(!IsSinglePlayer);
     }
 
     // Spawn main player
@@ -66,7 +86,11 @@ public class GameManager : MonoBehaviour
         _characterInstance = Instantiate(mainCharacter, _shootingZones[currentPositionPlayer].position, Quaternion.Euler(0, 180f, 0));
         if (_characterInstance)
         {
-            _ballInstance = _characterInstance.GetChild(0).GetComponent<BallController>();
+            CameraController.Instance.SetupPlayerCamera(_characterInstance.GetChild(1).transform);
+            Transform ballStart = _characterInstance.transform.GetChild(0).transform;
+            _ballInstance = Instantiate(balls[0], ballStart.position, Quaternion.identity).GetComponent<BallController>();
+            _ballInstance.BallStart = ballStart;
+            _ballInstance.ResetState();
         }
         else
         {
@@ -76,19 +100,18 @@ public class GameManager : MonoBehaviour
 
     void SpawnOpponent()
     {
-        _opponentInstance = Instantiate(mainCharacter, _shootingZones[currentPositionOpponent].position + opponentPositionOffset, Quaternion.Euler(0, 180f, 0));
+        _opponentInstance = Instantiate(mainCharacter, _shootingZones[currentPositionOpponent].position + _opponentPositionOffset, Quaternion.Euler(0, 180f, 0));
         if (_opponentInstance)
         {
-            _opponentInstance.gameObject.AddComponent<AIController>();  // Attach AI script to opponent
-            _opponentInstance.GetChild(0).GetComponent<BallController>().AIBall = true; // Set AI ball
-            Camera cameraInstance = _opponentInstance.GetComponentInChildren<Camera>();
-            if (cameraInstance)
-            {
-                // TODO: remove after moving camera outside character prefab
-                // Disable opponent camera object and script (not needed)
-                cameraInstance.enabled = false;
-                cameraInstance.gameObject.SetActive(false);
-            }
+            //_opponentInstance.gameObject.GetComponent<PlayerController>().enabled = false;
+            Transform ballStart = _opponentInstance.transform.GetChild(0).transform;
+            _opponentBallInstance = Instantiate(balls[1], ballStart.position, Quaternion.identity).GetComponent<BallController>();
+
+            _opponentInstance.gameObject.AddComponent<AIController>().BallInstance = _opponentBallInstance;  // Attach AI script to opponent
+            _opponentBallInstance.transform.SetParent(_opponentInstance); // Set AI ball to AI character
+            _opponentBallInstance.AIBall = true; // Set AI ball
+            _opponentBallInstance.BallStart = ballStart;
+            _opponentBallInstance.ResetState();
         }
         else
         {
@@ -97,11 +120,11 @@ public class GameManager : MonoBehaviour
     }
 
     // Called on first shot setup and in next ones, from both player and opponent
-    void UpdatePosition(ref int currentPosition, Transform playerInstance)
+    void UpdatePosition(ref int currentPosition, Transform playerInstance, Vector3 offset)
     {
         if (currentPosition >= _shootingZones.Length) currentPosition = 0;
         Vector3 newShootingZone = _shootingZones[currentPosition].position;
-        playerInstance.position = new Vector3(newShootingZone.x, 0f, newShootingZone.z);
+        playerInstance.position = new Vector3(newShootingZone.x, 0f, newShootingZone.z) + offset;
         Vector3 direction = HoopBasket.position - playerInstance.position;
         direction.y = 0;
         playerInstance.rotation = Quaternion.LookRotation(direction);
@@ -116,13 +139,13 @@ public class GameManager : MonoBehaviour
         if (!aiState)
         {
             scoreText.gameObject.SetActive(false);
-            // TODO: Move camera out of prefab
-            CameraController.Instance.ResetCamera();
-            UpdatePosition(ref currentPositionPlayer, _characterInstance);
+            //CameraController.Instance.ResetCamera();
+            UpdatePosition(ref currentPositionPlayer, _characterInstance, Vector3.zero);
+            CameraController.Instance.SetupPlayerCamera(_characterInstance.GetChild(1).transform);
             InputManager.Instance.RestartShot();
         } else
         {
-            UpdatePosition(ref currentPositionOpponent, _opponentInstance);
+            UpdatePosition(ref currentPositionOpponent, _opponentInstance, _opponentPositionOffset);
         }
     }
 

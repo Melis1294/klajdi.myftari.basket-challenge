@@ -835,6 +835,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 308b578f6d554f14b9814e1a96d44cff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  PlayerTotalScore: 3
+  OpponentTotalScore: 3
 --- !u!4 &1977009452
 Transform:
   m_ObjectHideFlags: 0

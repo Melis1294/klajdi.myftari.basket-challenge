@@ -5,11 +5,10 @@ using UnityEngine;
 
 public class CameraController : MonoBehaviour
 {
-    [SerializeField] private Transform cameraStart;
-
     private float _elapsed = 2f;   // Current time of flight
     private float _duration = 2f;  // Total time of flight
     private float _arcHeight = 2f;   // Height of the parable vertex
+    private Transform _cameraStart;
     private Transform _cameraEnd;
     private Vector3 _startPos;
     private Vector3 _endPos;
@@ -30,12 +29,13 @@ public class CameraController : MonoBehaviour
         {
             Instance = this;
         }
-        _cameraEnd = GameManager.Instance.CameraTarget;
     }
 
     // Start is called before the first frame update
-    void Start()
+    public void SetupPlayerCamera(Transform cameraStartTransform)
     {
+        _cameraStart = cameraStartTransform;
+        _cameraEnd = GameManager.Instance.CameraTarget;
         SetupCameraMove();
         ResetCamera();
     }
@@ -76,7 +76,7 @@ public class CameraController : MonoBehaviour
 
     private void SetupCameraMove()
     {
-        _startPos = cameraStart.position;
+        _startPos = _cameraStart.position;
         _endPos = _cameraEnd.position;
         Vector3 dir = (_endPos - _startPos).normalized;
         _adjustedEnd = _endPos - dir * _offset;
@@ -85,5 +85,8 @@ public class CameraController : MonoBehaviour
     public void ResetCamera()
     {
         transform.position = _startPos;
+        Vector3 direction = _endPos - _startPos;
+        direction.y = 0;
+        transform.rotation = Quaternion.LookRotation(direction);
     }
 }

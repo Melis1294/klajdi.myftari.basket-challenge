@@ -289,7 +289,6 @@ Transform:
   - {fileID: 1356659102}
   - {fileID: 1690704265}
   - {fileID: 1784774538}
-  - {fileID: 1611575609}
   - {fileID: 1964725474}
   m_Father: {fileID: 0}
   m_RootOrder: 1
@@ -378,7 +377,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1611575608}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: SceneController, Assembly-CSharp
         m_MethodName: StartGame
         m_Mode: 1
@@ -2286,7 +2285,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1611575608}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: SceneController, Assembly-CSharp
         m_MethodName: BackToMainMenu
         m_Mode: 1
@@ -2336,50 +2335,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1605442874}
   m_CullTransparentMesh: 1
---- !u!1 &1611575607
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1611575609}
-  - component: {fileID: 1611575608}
-  m_Layer: 0
-  m_Name: SceneManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1611575608
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1611575607}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 308b578f6d554f14b9814e1a96d44cff, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!4 &1611575609
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1611575607}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 22185269}
-  m_RootOrder: 3
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1667592432
 GameObject:
   m_ObjectHideFlags: 0
@@ -2565,10 +2520,15 @@ MonoBehaviour:
   ShootingZone: {fileID: 1375906512}
   mainCharacter: {fileID: 7483116572789041910, guid: cc1083956f401f7438502343e9493658, type: 3}
   currentPositionPlayer: 0
+  balls:
+  - {fileID: 6536287185626285137, guid: 993caf427bad3c04dad8a1628b1abdf7, type: 3}
+  - {fileID: 5849473246159792786, guid: 9456647ba6a2e1a4bbaf949868ac188f, type: 3}
   totalScoreText: {fileID: 997440776}
   scoreText: {fileID: 140289628}
+  endGameButton: {fileID: 1605442876}
+  retryButton: {fileID: 37465218}
   State: 0
-  opponentPositionOffset: {x: -1, y: 0, z: 0}
+  IsSinglePlayer: 0
   currentPositionOpponent: 0
   opponentScoreText: {fileID: 374313811}
 --- !u!1 &1708397049
@@ -2632,7 +2592,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   startupTime: 4
-  RemainingTime: 60
+  RemainingTime: 5
   _gameStarted: 0
   gameTimerText: {fileID: 1391100949}
   startupTimerText: {fileID: 1088060874}
@@ -2724,6 +2684,103 @@ Transform:
   m_Father: {fileID: 1375906512}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1884061328
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1884061331}
+  - component: {fileID: 1884061330}
+  - component: {fileID: 1884061329}
+  - component: {fileID: 1884061332}
+  m_Layer: 0
+  m_Name: Camera
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!81 &1884061329
+AudioListener:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1884061328}
+  m_Enabled: 1
+--- !u!20 &1884061330
+Camera:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1884061328}
+  m_Enabled: 1
+  serializedVersion: 2
+  m_ClearFlags: 1
+  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_projectionMatrixMode: 1
+  m_GateFitMode: 2
+  m_FOVAxisMode: 0
+  m_SensorSize: {x: 36, y: 24}
+  m_LensShift: {x: 0, y: 0}
+  m_FocalLength: 50
+  m_NormalizedViewPortRect:
+    serializedVersion: 2
+    x: 0
+    y: 0
+    width: 1
+    height: 1
+  near clip plane: 0.3
+  far clip plane: 1000
+  field of view: 70
+  orthographic: 0
+  orthographic size: 5
+  m_Depth: 0
+  m_CullingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_RenderingPath: -1
+  m_TargetTexture: {fileID: 0}
+  m_TargetDisplay: 0
+  m_TargetEye: 3
+  m_HDR: 1
+  m_AllowMSAA: 1
+  m_AllowDynamicResolution: 0
+  m_ForceIntoRT: 0
+  m_OcclusionCulling: 1
+  m_StereoConvergence: 10
+  m_StereoSeparation: 0.022
+--- !u!4 &1884061331
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1884061328}
+  m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 5
+  m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
+--- !u!114 &1884061332
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1884061328}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e2ca5f4983f612b49bb2999bb0efd383, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1908817861
 GameObject:
   m_ObjectHideFlags: 0
@@ -2945,7 +3002,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 22185269}
-  m_RootOrder: 4
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1964725475
 MonoBehaviour:

@@ -5,6 +5,8 @@ using System;
 
 public class BallController : MonoBehaviour
 {
+    public Transform BallStart;
+
     private bool _hoopEntered;
     private bool _rimWasTouched;
     private bool _backboardWasTouched;
@@ -13,7 +15,6 @@ public class BallController : MonoBehaviour
     private string _backboardTag = "Backboard";
     private string _groundTag = "Ground";
 
-    [SerializeField] private Transform ballStart;
     [SerializeField] private float _fallSpeed = 1.8f;
     private float _elapsed = 1.5f;
     private readonly float _duration = 1.5f; // total time of flight
@@ -33,11 +34,11 @@ public class BallController : MonoBehaviour
     public bool AIBall;
     private Collider _ballCollider;
 
-    private void Start()
+    private void Awake()
     {
         _ballRb = GetComponent<Rigidbody>();
         _ballCollider = GetComponent<Collider>();
-        ResetState();
+        //ResetState();
     }
 
     // Update is called once per frame
@@ -137,7 +138,7 @@ public class BallController : MonoBehaviour
         _rimWasTouched = false;
         _backboardWasTouched = false;
 
-        _startPos = ballStart.position;
+        _startPos = BallStart.position;
         _endPos = GameManager.Instance.HoopBasket.position;
     }
 
@@ -168,18 +169,17 @@ public class BallController : MonoBehaviour
         if (collision.collider.GetComponent<BallController>())
         {
             Physics.IgnoreCollision(collision.collider, _ballCollider);
-            Debug.LogWarning("Collision ignored");
             return;
         }
 
         if (collision.collider.CompareTag(_groundTag))
         {
-            if (GameManager.Instance.State == GameManager.GameState.GameOver)
-            {
-                // Last shot completed
-                TimerController.Instance.GameOver();
-                return;
-            }
+            //if (GameManager.Instance.State == GameManager.GameState.GameOver)
+            //{
+            //    // Last shot completed
+            //    TimerController.Instance.GameOver();
+            //    return;
+            //}
 
             // Prepare next shot if game still playing
             GameManager.Instance.ResetGameState(AIBall);
