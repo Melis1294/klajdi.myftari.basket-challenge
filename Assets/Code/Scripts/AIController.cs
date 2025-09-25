@@ -8,14 +8,6 @@ public class AIController : MonoBehaviour
     [SerializeField] private bool hasBall;
     public BallController BallInstance;
 
-    // Start is called before the first frame update
-    //void Start()
-    //{
-    //    _ballInstance = transform.GetComponentInChildren<BallController>();
-    //    if (!_ballInstance) 
-    //        throw new NullReferenceException("Ball instance not found!");
-    //}
-
     // Update is called once per frame
     void Update()
     {

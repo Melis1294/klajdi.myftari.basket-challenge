@@ -28,6 +28,7 @@ public class TimerController : MonoBehaviour
         }
         gameOverScreen.SetActive(false);
         RemainingTime = SceneController.Instance.GetRetryTimer();
+        _totalScoreUI = gameOverScreen.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
     }
 
 
@@ -84,14 +85,12 @@ public class TimerController : MonoBehaviour
     // Setup Game Over UI
     public void GameOver()
     {
-        _totalScoreUI = gameOverScreen.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
         int playerScore = GameManager.Instance.TotalScore;
         int opponentScore = GameManager.Instance.OpponentScore;
         if (playerScore == opponentScore)
         {
-            Debug.Log("Even points");
             GameManager.Instance.UpdateGameState(GameManager.GameState.Startup);
-            // Reset total scores
+            // Reset total scores and set even points timer mode
             SceneController.Instance.SetScores(playerScore, opponentScore);
             SceneController.Instance.SetRetryTimer(10f);
             StartCoroutine(EvenPoints());
@@ -116,15 +115,8 @@ public class TimerController : MonoBehaviour
     {
         _totalScoreUI.text = string.Format("The score is even\nRetry for {0} seconds", 10f);
         gameOverScreen.SetActive(true);
-        // Turn off replay button
-        gameOverScreen.transform.GetChild(1).gameObject.SetActive(false);
+        gameOverScreen.transform.GetChild(1).gameObject.SetActive(false);   // Turn off replay button
         yield return new WaitForSeconds(3f);
         SceneController.Instance.StartGame();
-        //_totalScoreUI.text = "";
-        //startupTime = 3f;
-        //_gameStarted = false;
-        //UpdateTimersUI();
-        //GameManager.Instance.UpdateGameState(GameManager.GameState.Play);
-        //RemainingTime = 10f;
     }
 }

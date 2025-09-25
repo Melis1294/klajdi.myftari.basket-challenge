@@ -38,7 +38,6 @@ public class BallController : MonoBehaviour
     {
         _ballRb = GetComponent<Rigidbody>();
         _ballCollider = GetComponent<Collider>();
-        //ResetState();
     }
 
     // Update is called once per frame
@@ -174,13 +173,6 @@ public class BallController : MonoBehaviour
 
         if (collision.collider.CompareTag(_groundTag))
         {
-            //if (GameManager.Instance.State == GameManager.GameState.GameOver)
-            //{
-            //    // Last shot completed
-            //    TimerController.Instance.GameOver();
-            //    return;
-            //}
-
             // Prepare next shot if game still playing
             GameManager.Instance.ResetGameState(AIBall);
             ResetState();

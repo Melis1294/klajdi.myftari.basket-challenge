@@ -98,6 +98,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    // TODO: Fix initial rotation towards hoop
     void SpawnOpponent()
     {
         _opponentInstance = Instantiate(mainCharacter, _shootingZones[currentPositionOpponent].position + _opponentPositionOffset, Quaternion.Euler(0, 180f, 0));
@@ -139,7 +140,6 @@ public class GameManager : MonoBehaviour
         if (!aiState)
         {
             scoreText.gameObject.SetActive(false);
-            //CameraController.Instance.ResetCamera();
             UpdatePosition(ref currentPositionPlayer, _characterInstance, Vector3.zero);
             CameraController.Instance.SetupPlayerCamera(_characterInstance.GetChild(1).transform);
             InputManager.Instance.RestartShot();
@@ -159,7 +159,7 @@ public class GameManager : MonoBehaviour
             currentPositionOpponent++;  // Update opponent position for next shot
         } else
         {
-            scoreText.text = string.Format("{0} points!", points);  // Show single score UI
+            scoreText.text = string.Format("{0} points!", points);  // Show single score UI (only player)
             scoreText.gameObject.SetActive(true);
             TotalScore += points;
             totalScoreText.text = string.Format("Score: {0}", TotalScore);
