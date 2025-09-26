@@ -37,7 +37,10 @@ public class GameManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI opponentScoreText;
     public int OpponentScore { get; private set; }
     private Transform _opponentInstance;
-    
+
+    // Audio
+    public AudioSource SFXManager;
+    public AudioSource ThemeManager;
 
     public static GameManager Instance { get; private set; }
 
@@ -164,7 +167,7 @@ public class GameManager : MonoBehaviour
         } else
         {
             points *= FireballController.Instance.FireballMultiplier;
-            scoreText.text = string.Format("{0} points!", points);  // Show single score UI (only player)
+            scoreText.text = string.Format("+{0} points!", points);  // Show single score UI (only player)
             scoreText.gameObject.SetActive(true);
             TotalScore += points;
             totalScoreText.text = string.Format("Score: {0}", TotalScore);

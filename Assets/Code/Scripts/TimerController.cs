@@ -10,10 +10,17 @@ public class TimerController : MonoBehaviour
     [SerializeField] private float startupTime;
     public float RemainingTime;
     [SerializeField] private bool _gameStarted;
+
+    // UI
     [SerializeField] private TextMeshProUGUI gameTimerText;
     [SerializeField] private TextMeshProUGUI startupTimerText;
     [SerializeField] private GameObject gameOverScreen;
     private TextMeshProUGUI _totalScoreUI;
+
+    // Audio
+    [SerializeField] private AudioClip buzzer;
+    [SerializeField] private AudioClip win;
+    [SerializeField] private AudioClip lose;
 
     private void Awake()
     {
@@ -62,6 +69,7 @@ public class TimerController : MonoBehaviour
         {
             RemainingTime = 0;
             GameManager.Instance.UpdateGameState(GameManager.GameState.GameOver);
+            GameManager.Instance.SFXManager.PlayOneShot(buzzer);
             StartCoroutine(SetupGameOver());
         }
         int minutes = Mathf.FloorToInt(RemainingTime / 60);
@@ -98,7 +106,10 @@ public class TimerController : MonoBehaviour
         }
 
         bool isSinglePlayer = GameManager.Instance.IsSinglePlayer;
-        string victoryText = isSinglePlayer ? "" : playerScore > opponentScore ? "You win!\n" : "You lose!\n";
+        bool playerWins = playerScore > opponentScore;
+        string victoryText = isSinglePlayer ? "" : playerWins ? "You win!\n" : "You lose!\n";
+        GameManager.Instance.ThemeManager.Stop();
+        GameManager.Instance.SFXManager.PlayOneShot(playerWins ? win : lose);
         string scoreRecapText = isSinglePlayer ? playerScore.ToString() : string.Format("{0} - {1}", playerScore, opponentScore);
         _totalScoreUI.text = string.Format("{0}Total Score\n{1}", victoryText, scoreRecapText);
         BackboardController.Instance.ResetValue();

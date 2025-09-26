@@ -35,6 +35,11 @@ public class BallController : MonoBehaviour
     public bool AIBall;
     private Collider _ballCollider;
 
+    // Audio
+    private AudioSource _sfxManager;
+    [SerializeField] private AudioClip bounce;
+    [SerializeField] private AudioClip hoop;
+
     private void Awake()
     {
         _ballRb = GetComponent<Rigidbody>();
@@ -52,6 +57,7 @@ public class BallController : MonoBehaviour
     private void Start()
     {
         if (!AIBall) _fireTrails = transform.GetChild(0).gameObject;
+        _sfxManager = GameManager.Instance.SFXManager;
     }
 
     void ComputeFlight()
@@ -172,6 +178,8 @@ public class BallController : MonoBehaviour
     // Manage collisions with ground, rim and backboard
     private void OnCollisionEnter(Collision collision)
     {
+        _sfxManager.PlayOneShot(bounce);
+
         if (collision.collider.GetComponent<BallController>())
         {
             Physics.IgnoreCollision(collision.collider, _ballCollider);
@@ -202,6 +210,8 @@ public class BallController : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        _sfxManager.PlayOneShot(hoop);
+
         if (!other.CompareTag(_hoopTag) || _hoopEntered) return;
         
         // Manage score cases if shot was scored

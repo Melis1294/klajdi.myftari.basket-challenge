@@ -103,10 +103,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7b6d2bd55abab99498075134f320c198, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ballStart: {fileID: 0}
+  BallStart: {fileID: 0}
   _fallSpeed: 1.8
   minHoopSpeed: 40
   maxHoopSpeed: 50
   minBackboardSpeed: 70
   maxBackboardSpeed: 75
   AIBall: 0
+  bounce: {fileID: 8300000, guid: f4232bbf4b6c7f548ae5d7d20e6e4914, type: 3}
+  hoop: {fileID: 8300000, guid: 7cdd5bb30cd832d428cd74a513a4e8b0, type: 3}
