@@ -30,7 +30,8 @@ public class AIController : MonoBehaviour
         if (GameManager.Instance.State == GameManager.GameState.Play)
         {
             float shootingSpeed = UnityEngine.Random.Range(5f, 90f);
-            BallInstance.Shoot(shootingSpeed);
+            //TODO: remove angle
+            BallInstance.Shoot(shootingSpeed, 75f);
         }
     }
 

@@ -2822,6 +2822,9 @@ MonoBehaviour:
   ShootingZone: {fileID: 1375906512}
   mainCharacter: {fileID: 7483116572789041910, guid: cc1083956f401f7438502343e9493658, type: 3}
   currentPositionPlayer: 0
+  ballSpeedDivider: 39
+  strength: 39
+  angle: 75
   balls:
   - {fileID: 6536287185626285137, guid: 993caf427bad3c04dad8a1628b1abdf7, type: 3}
   - {fileID: 5849473246159792786, guid: 9456647ba6a2e1a4bbaf949868ac188f, type: 3}
@@ -3885,7 +3888,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 612375193440037374, guid: c293442d00ecea74dbaecf7811ec1c2e, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.386
+      value: 0.295
       objectReference: {fileID: 0}
     - target: {fileID: 612375193440037375, guid: c293442d00ecea74dbaecf7811ec1c2e, type: 3}
       propertyPath: m_Enabled

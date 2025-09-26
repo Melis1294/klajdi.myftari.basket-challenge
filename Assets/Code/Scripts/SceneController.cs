@@ -3,7 +3,7 @@ using UnityEngine.SceneManagement;
 
 public class SceneController : MonoBehaviour
 {
-    private float _retryTimer = 60f;
+    private float _retryTimer = 5000f; //60f;
     public static SceneController Instance { get; private set; }
     private int _playerTotalScore;
     private int _opponentTotalScore;

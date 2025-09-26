@@ -10,7 +10,10 @@ public class GameManager : MonoBehaviour
     public Transform Backboard;
     public Transform ShootingZone;
     [SerializeField] private Transform mainCharacter;
-    [SerializeField] int currentPositionPlayer = 0;
+    [SerializeField] int currentPositionPlayer = 1;
+    [SerializeField] float ballSpeedDivider = 39f;
+    [SerializeField] float strength = 39f;
+    [SerializeField] float angle = 75f;
     [SerializeField] private GameObject[] balls;
     private Transform _characterInstance;
     private Transform[] _shootingZones;
@@ -53,6 +56,8 @@ public class GameManager : MonoBehaviour
             Instance = this;
         }
         UpdateGameState(GameState.Startup);
+        // TODO: remove
+        currentPositionPlayer = 2;
 
         // Get shooting zones
         int childCount = ShootingZone.childCount;
@@ -134,7 +139,8 @@ public class GameManager : MonoBehaviour
     }
 
     // Compute shot based on input strength
-    public void OnBallShot(float shootingSpeed) => _ballInstance.Shoot(shootingSpeed);
+    //TODO: restore
+    public void OnBallShot(float shootingSpeed) => _ballInstance.Shoot(strength / ballSpeedDivider, angle);
 
     // Reset game stats for next shot, for AI or player
     public void ResetGameState(bool aiState = false)
@@ -166,7 +172,8 @@ public class GameManager : MonoBehaviour
             scoreText.gameObject.SetActive(true);
             TotalScore += points;
             totalScoreText.text = string.Format("Score: {0}", TotalScore);
-            currentPositionPlayer++; // Update player position for next shot
+            // TODO: remove comment
+            //currentPositionPlayer++; // Update player position for next shot
 
             // Manage fireball mode
             FireballController.Instance.AddScore((float)points / 8);

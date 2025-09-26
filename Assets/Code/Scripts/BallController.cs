@@ -16,6 +16,7 @@ public class BallController : MonoBehaviour
     private string _groundTag = "Ground";
 
     [SerializeField] private float _fallSpeed = 1.8f;
+    [SerializeField] private float gravity = -9.81f;
     private float _elapsed = 1.5f;
     private readonly float _duration = 1.5f; // total time of flight
     private readonly float _arcHeight = 2f;  // height of the parabola
@@ -41,11 +42,11 @@ public class BallController : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
-    {
-        // ball in the air
-        if (_elapsed < _duration) ComputeFlight();
-    }
+    //void Update()
+    //{
+    //    ball in the air
+    //    if (_elapsed < _duration) ComputeFlight();
+    //}
 
     void ComputeFlight()
     {
@@ -89,6 +90,43 @@ public class BallController : MonoBehaviour
         }
     }
 
+    public void ShootBall(Vector3 startPos, Vector3 hoopPos, float strength, float angleVal)
+    {
+        _ballRb.useGravity = true;
+        _ballRb.MovePosition(startPos);
+
+        // Direction to hoop in XZ
+        Vector3 toHoop = hoopPos - startPos;
+        Vector3 toHoopXZ = new Vector3(toHoop.x, 0, toHoop.z);
+
+        // Pick an angle (e.g. 45°) for arc
+        float angle = angleVal * Mathf.Deg2Rad;
+
+        float distance = toHoopXZ.magnitude;
+        float heightDiff = hoopPos.y - startPos.y;
+
+        // Formula for projectile speed needed
+        float v2 = (gravity * distance * distance) /
+                   (2f * (heightDiff - Mathf.Tan(angle) * distance) * Mathf.Pow(Mathf.Cos(angle), 2));
+
+        if (v2 <= 0f)
+        {
+            // Cannot reach with this angle, just fallback
+            v2 = strength * strength;
+        }
+
+        float v = Mathf.Sqrt(Mathf.Abs(v2));
+
+        // Direction with angle
+        Vector3 dirXZ = toHoopXZ.normalized;
+        Vector3 velocity = dirXZ * v * Mathf.Cos(angle) + Vector3.up * v * Mathf.Sin(angle);
+
+        // Scale with input strength
+        velocity *= strength;
+
+        _ballRb.velocity = velocity;
+    }
+
     // Compute shot logic in relation to right values for hoop and backboard
     private void UpdateTarget(float shootingSpeed)
     {
@@ -124,11 +162,12 @@ public class BallController : MonoBehaviour
         if (axis == 1) _endPos.z += (_diversion * sign);
     }
 
-    public void Shoot(float shootingSpeed)
+    public void Shoot(float shootingSpeed, float angle)
     {
         _shootingSpeed = shootingSpeed;
-        UpdateTarget(shootingSpeed);
-        _elapsed = 0;
+        //UpdateTarget(shootingSpeed);
+        ShootBall(_startPos, _endPos, shootingSpeed, angle);
+        //_elapsed = 0;
     }
 
     private void SetupBallShoot()
@@ -182,7 +221,7 @@ public class BallController : MonoBehaviour
             return;
         }
 
-        if (collision.collider.CompareTag(_backboardTag) && !_backboardWasTouched)
+        if (collision.collider.CompareTag(_backboardTag) && !_backboardWasTouched && !_rimWasTouched)
         {
             _backboardWasTouched = true;
             return;

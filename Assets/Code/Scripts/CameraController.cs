@@ -66,6 +66,12 @@ public class CameraController : MonoBehaviour
 
         // Add smooth movement transition
         transform.position = Vector3.Lerp(transform.position, targetPos, Time.deltaTime * _smoothSpeed);
+
+        // TODO: remove
+        if (_elapsed >= _duration)
+        {
+            GameManager.Instance.ResetGameState();
+        }
     }
 
     public void StartMoving()
