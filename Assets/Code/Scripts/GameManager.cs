@@ -24,6 +24,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private TextMeshPro scoreText;
     [SerializeField] private Button endGameButton;
     [SerializeField] private Button retryButton;
+    [SerializeField] private Button menuButton;
 
     // Game State
     public GameState State;
@@ -66,6 +67,7 @@ public class GameManager : MonoBehaviour
         // Setup Buttons
         endGameButton.onClick.AddListener(() => SceneController.Instance.BackToMainMenu());
         retryButton.onClick.AddListener(() => SceneController.Instance.StartGame());
+        menuButton.onClick.AddListener(() => SceneController.Instance.BackToMainMenu());
     }
 
     private void Start()

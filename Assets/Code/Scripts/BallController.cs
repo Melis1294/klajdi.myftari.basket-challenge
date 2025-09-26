@@ -29,6 +29,7 @@ public class BallController : MonoBehaviour
     [SerializeField] float maxBackboardSpeed = 75;
     private float _diversion = 0;
     private float _shootingSpeed;
+    private GameObject _fireTrails;
 
     // Event to notify AI that he has the ball again
     public bool AIBall;
@@ -41,10 +42,16 @@ public class BallController : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
         // ball in the air
         if (_elapsed < _duration) ComputeFlight();
+        if (!AIBall) _fireTrails.SetActive(FireballController.Instance.FireballMultiplier == 2);
+    }
+
+    private void Start()
+    {
+        if (!AIBall) _fireTrails = transform.GetChild(0).gameObject;
     }
 
     void ComputeFlight()
@@ -182,7 +189,8 @@ public class BallController : MonoBehaviour
             return;
         }
 
-        if (collision.collider.CompareTag(_backboardTag) && !_backboardWasTouched)
+        // Register backboard touched and prevent accidental touch if rim was touched first
+        if (collision.collider.CompareTag(_backboardTag) && !_backboardWasTouched && !_rimWasTouched)
         {
             _backboardWasTouched = true;
             return;
