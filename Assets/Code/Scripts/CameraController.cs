@@ -5,16 +5,16 @@ using UnityEngine;
 
 public class CameraController : MonoBehaviour
 {
-    [SerializeField] private Transform cameraStart;
-
-    private float elapsed = 1.5f;   // Current time of flight
-    private float duration = 1.5f;  // Total time of flight
-    private float arcHeight = 2f;   // Height of the parable vertex
+    private float _elapsed = 2f;   // Current time of flight
+    private float _duration = 2f;  // Total time of flight
+    private float _arcHeight = 2f;   // Height of the parable vertex
+    private Transform _cameraStart;
     private Transform _cameraEnd;
-    private Vector3 startPos;
-    private Vector3 endPos;
-    private Vector3 adjustedEnd;
-    public float offset = 2f;
+    private Vector3 _startPos;
+    private Vector3 _endPos;
+    private Vector3 _adjustedEnd;
+    private float _offset = 2f;
+    private float _smoothSpeed = 2.8f;
     public static CameraController Instance { get; private set; }
 
     private void Awake()
@@ -29,12 +29,13 @@ public class CameraController : MonoBehaviour
         {
             Instance = this;
         }
-        _cameraEnd = GameManager.Instance.CameraTarget;
     }
 
     // Start is called before the first frame update
-    void Start()
+    public void SetupPlayerCamera(Transform cameraStartTransform)
     {
+        _cameraStart = cameraStartTransform;
+        _cameraEnd = GameManager.Instance.CameraTarget;
         SetupCameraMove();
         ResetCamera();
     }
@@ -43,47 +44,49 @@ public class CameraController : MonoBehaviour
     void Update()
     {
         // ball in the air
-        if (elapsed < duration) ComputeCameraMove();
+        if (_elapsed < _duration) ComputeCameraMove();
     }
 
     void ComputeCameraMove()
     {
-        elapsed += Time.deltaTime;
-        float t = Mathf.Clamp01(elapsed / duration);
+        _elapsed += Time.deltaTime;
+        float t = Mathf.Clamp01(_elapsed / _duration);
 
         // Linear interpolation in XZ
         Vector3 horizontalPos = Vector3.Lerp(
-            new Vector3(startPos.x, 0, startPos.z),
-            new Vector3(adjustedEnd.x, 0, adjustedEnd.z),
+            new Vector3(_startPos.x, 0, _startPos.z),
+            new Vector3(_adjustedEnd.x, 0, _adjustedEnd.z),
             t
         );
 
         // Parabolic interpolation in Y
-        float y = Mathf.Lerp(startPos.y, adjustedEnd.y, t) + arcHeight * 4 * t * (1 - t);
+        float y = Mathf.Lerp(_startPos.y, _adjustedEnd.y, t) + _arcHeight * 4 * t * (1 - t);
 
         Vector3 targetPos = new Vector3(horizontalPos.x, y, horizontalPos.z);
 
         // Add smooth movement transition
-        float smoothSpeed = 5f; // tweak this value (higher = snappier)
-        transform.position = Vector3.Lerp(transform.position, targetPos, Time.deltaTime * smoothSpeed);
+        transform.position = Vector3.Lerp(transform.position, targetPos, Time.deltaTime * _smoothSpeed);
     }
 
     public void StartMoving()
     {
         SetupCameraMove();
-        elapsed = 0f;
+        _elapsed = 0f;
     }
 
     private void SetupCameraMove()
     {
-        startPos = cameraStart.position;
-        endPos = _cameraEnd.position;
-        Vector3 dir = (endPos - startPos).normalized;
-        adjustedEnd = endPos - dir * offset;
+        _startPos = _cameraStart.position;
+        _endPos = _cameraEnd.position;
+        Vector3 dir = (_endPos - _startPos).normalized;
+        _adjustedEnd = _endPos - dir * _offset;
     }
 
     public void ResetCamera()
     {
-        transform.position = startPos;
+        transform.position = _startPos;
+        Vector3 direction = _endPos - _startPos;
+        direction.y = 0;
+        transform.rotation = Quaternion.LookRotation(direction);
     }
 }

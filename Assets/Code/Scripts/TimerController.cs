@@ -10,9 +10,17 @@ public class TimerController : MonoBehaviour
     [SerializeField] private float startupTime;
     public float RemainingTime;
     [SerializeField] private bool _gameStarted;
+
+    // UI
     [SerializeField] private TextMeshProUGUI gameTimerText;
     [SerializeField] private TextMeshProUGUI startupTimerText;
     [SerializeField] private GameObject gameOverScreen;
+    private TextMeshProUGUI _totalScoreUI;
+
+    // Audio
+    [SerializeField] private AudioClip buzzer;
+    [SerializeField] private AudioClip win;
+    [SerializeField] private AudioClip lose;
 
     private void Awake()
     {
@@ -26,6 +34,8 @@ public class TimerController : MonoBehaviour
             Instance = this;
         }
         gameOverScreen.SetActive(false);
+        RemainingTime = SceneController.Instance.GetRetryTimer();
+        _totalScoreUI = gameOverScreen.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
     }
 
 
@@ -59,6 +69,7 @@ public class TimerController : MonoBehaviour
         {
             RemainingTime = 0;
             GameManager.Instance.UpdateGameState(GameManager.GameState.GameOver);
+            GameManager.Instance.SFXManager.PlayOneShot(buzzer);
             StartCoroutine(SetupGameOver());
         }
         int minutes = Mathf.FloorToInt(RemainingTime / 60);
@@ -82,11 +93,41 @@ public class TimerController : MonoBehaviour
     // Setup Game Over UI
     public void GameOver()
     {
-        TextMeshProUGUI totalScoreUI = gameOverScreen.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
-        totalScoreUI.text = string.Format("Game Over\nTotal Score: {0}", GameManager.Instance.TotalScore);
+        int playerScore = GameManager.Instance.TotalScore;
+        int opponentScore = GameManager.Instance.OpponentScore;
+        if (playerScore == opponentScore)
+        {
+            GameManager.Instance.UpdateGameState(GameManager.GameState.Startup);
+            // Reset total scores and set even points timer mode
+            SceneController.Instance.SetScores(playerScore, opponentScore);
+            SceneController.Instance.SetRetryTimer(10f);
+            StartCoroutine(EvenPoints());
+            return;
+        }
+
+        bool isSinglePlayer = GameManager.Instance.IsSinglePlayer;
+        bool playerWins = playerScore > opponentScore;
+        string victoryText = isSinglePlayer ? "" : playerWins ? "You win!\n" : "You lose!\n";
+        GameManager.Instance.ThemeManager.Stop();
+        GameManager.Instance.SFXManager.PlayOneShot(playerWins ? win : lose);
+        string scoreRecapText = isSinglePlayer ? playerScore.ToString() : string.Format("{0} - {1}", playerScore, opponentScore);
+        _totalScoreUI.text = string.Format("{0}Total Score\n{1}", victoryText, scoreRecapText);
         BackboardController.Instance.ResetValue();
         BackboardController.Instance.enabled = false;
         gameTimerText.transform.parent.gameObject.SetActive(false);
         gameOverScreen.SetActive(true);
+
+        // Reset total scores
+        SceneController.Instance.SetScores(0);
+        SceneController.Instance.ResetRetryTimer();
+    }
+
+    IEnumerator EvenPoints()
+    {
+        _totalScoreUI.text = string.Format("The score is even\nRetry for {0} seconds", 10f);
+        gameOverScreen.SetActive(true);
+        gameOverScreen.transform.GetChild(1).gameObject.SetActive(false);   // Turn off replay button
+        yield return new WaitForSeconds(3f);
+        SceneController.Instance.StartGame();
     }
 }

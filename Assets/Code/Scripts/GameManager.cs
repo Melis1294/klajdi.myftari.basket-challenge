@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 
 public class GameManager : MonoBehaviour
@@ -9,36 +10,40 @@ public class GameManager : MonoBehaviour
     public Transform Backboard;
     public Transform ShootingZone;
     [SerializeField] private Transform mainCharacter;
-    [SerializeField] int currentPosition = 0;
-    [SerializeField] private GameObject ball;
-    [SerializeField] private float _fallSpeed = 1.8f;
+    [SerializeField] int currentPositionPlayer = 0;
+    [SerializeField] private GameObject[] balls;
     private Transform _characterInstance;
     private Transform[] _shootingZones;
-    private GameObject _ballInstance;
-    private float _elapsed = 1.5f;
-    private readonly float _duration = 1.5f; // total time of flight
-    private readonly float _arcHeight = 2f;  // height of the parabola
-    private Vector3 _startPos;
-    private Vector3 _endPos;
-    private Rigidbody _ballRb;
-    public static GameManager Instance { get; private set; }
-
-    [SerializeField] float minHoopSpeed = 40;
-    [SerializeField] float maxHoopSpeed = 50;
-    [SerializeField] float minBackboardSpeed = 70;
-    [SerializeField] float maxBackboardSpeed = 75;
-    private float _diversion = 0;
-    private float _shootingSpeed;
+    private BallController _ballInstance;
+    private BallController _opponentBallInstance;
 
     public int TotalScore { get;  private set; }
+
+    // UI
     [SerializeField] private TextMeshProUGUI totalScoreText;
     [SerializeField] private TextMeshPro scoreText;
+    [SerializeField] private Button endGameButton;
+    [SerializeField] private Button retryButton;
+    [SerializeField] private Button menuButton;
 
     // Game State
     public GameState State;
     public static event Action<GameState> OnGameStateChanged;
 
-    // Start is called before the first frame update
+    // Game mode
+    public bool IsSinglePlayer;
+    private Vector3 _opponentPositionOffset = new Vector3(-0.5f, 0, 0);
+    [SerializeField] int currentPositionOpponent = 0;
+    [SerializeField] private TextMeshProUGUI opponentScoreText;
+    public int OpponentScore { get; private set; }
+    private Transform _opponentInstance;
+
+    // Audio
+    public AudioSource SFXManager;
+    public AudioSource ThemeManager;
+
+    public static GameManager Instance { get; private set; }
+
     private void Awake()
     {
         // Prevent class instance duplicates
@@ -61,159 +66,126 @@ public class GameManager : MonoBehaviour
         {
             _shootingZones[i] = ShootingZone.GetChild(i);
         }
+
+        // Setup Buttons
+        endGameButton.onClick.AddListener(() => SceneController.Instance.BackToMainMenu());
+        retryButton.onClick.AddListener(() => SceneController.Instance.StartGame());
+        menuButton.onClick.AddListener(() => SceneController.Instance.BackToMainMenu());
     }
 
-    void Start()
+    private void Start()
     {
-        _characterInstance = Instantiate(mainCharacter, _shootingZones[currentPosition].position, Quaternion.Euler(0, 180f, 0));
-        SpawnBall();
-    }
-
-    void SpawnBall()
-    {
-        var ballPosition = _shootingZones[currentPosition].position;
-        ballPosition.y = ballPosition.y + 1f;
-        if (!_ballInstance)
-        {
-            _ballInstance = Instantiate(ball, ballPosition, Quaternion.identity);
-        } else
-        {
-            _ballInstance.transform.position = ballPosition;
+        SpawnCharacter();
+        int[] totalScores = SceneController.Instance.GetScores();
+        TotalScore = totalScores[0];
+        totalScoreText.text = string.Format("Score: {0}", TotalScore);
+        if (!IsSinglePlayer) {
+            OpponentScore = totalScores[1];
+            opponentScoreText.text = string.Format("AI Score: {0}", OpponentScore);
+            SpawnOpponent(); 
         }
-
-        // Initialize positions
-        _endPos = HoopBasket.position;
-        _startPos = ballPosition;
-
-        // Setup ball physics
-        _ballRb = _ballInstance.GetComponent<Rigidbody>();
-        _ballRb.useGravity = false;
-        _ballRb.velocity = Vector3.zero;
-        _ballRb.angularVelocity = Vector3.zero;
-        _ballInstance.transform.LookAt(HoopBasket.transform);
+        opponentScoreText.gameObject.SetActive(!IsSinglePlayer);
     }
 
-    // Update is called once per frame
-    void Update()
+    // Spawn main player
+    void SpawnCharacter()
     {
-        // ball in the air
-        if (_elapsed < _duration) ComputeFlight();
+        _characterInstance = Instantiate(mainCharacter, _shootingZones[currentPositionPlayer].position, Quaternion.Euler(0, 180f, 0));
+        if (_characterInstance)
+        {
+            CameraController.Instance.SetupPlayerCamera(_characterInstance.GetChild(1).transform);
+            Transform ballStart = _characterInstance.transform.GetChild(0).transform;
+            _ballInstance = Instantiate(balls[0], ballStart.position, Quaternion.identity).GetComponent<BallController>();
+            _ballInstance.BallStart = ballStart;
+            _ballInstance.ResetState();
+        }
+        else
+        {
+            throw new NullReferenceException("Character instance not found!");
+        }
     }
 
-    // Called on first shot setup and in next ones
-    void UpdatePosition()
+    // TODO: Fix initial rotation towards hoop
+    void SpawnOpponent()
+    {
+        _opponentInstance = Instantiate(mainCharacter, _shootingZones[currentPositionOpponent].position + _opponentPositionOffset, Quaternion.Euler(0, 180f, 0));
+        if (_opponentInstance)
+        {
+            //_opponentInstance.gameObject.GetComponent<PlayerController>().enabled = false;
+            Transform ballStart = _opponentInstance.transform.GetChild(0).transform;
+            _opponentBallInstance = Instantiate(balls[1], ballStart.position, Quaternion.identity).GetComponent<BallController>();
+
+            _opponentInstance.gameObject.AddComponent<AIController>().BallInstance = _opponentBallInstance;  // Attach AI script to opponent
+            _opponentBallInstance.transform.SetParent(_opponentInstance); // Set AI ball to AI character
+            _opponentBallInstance.AIBall = true; // Set AI ball
+            _opponentBallInstance.BallStart = ballStart;
+            _opponentBallInstance.ResetState();
+        }
+        else
+        {
+            throw new NullReferenceException("Opponent instance not found!");
+        }
+    }
+
+    // Called on first shot setup and in next ones, from both player and opponent
+    void UpdatePosition(ref int currentPosition, Transform playerInstance, Vector3 offset)
     {
         if (currentPosition >= _shootingZones.Length) currentPosition = 0;
         Vector3 newShootingZone = _shootingZones[currentPosition].position;
-        _characterInstance.position = new Vector3(newShootingZone.x, 0f, newShootingZone.z);
-        Vector3 direction = HoopBasket.position - _characterInstance.position;
+        playerInstance.position = new Vector3(newShootingZone.x, 0f, newShootingZone.z) + offset;
+        Vector3 direction = HoopBasket.position - playerInstance.position;
         direction.y = 0;
-        _characterInstance.rotation = Quaternion.LookRotation(direction);
-        SpawnBall();
-    }
-
-    void ComputeFlight()
-    {
-        _elapsed += Time.deltaTime;
-        float t = Mathf.Clamp01(_elapsed / _duration);
-
-        // Linear interpolation in XZ
-        Vector3 horizontalPos = Vector3.Lerp(
-            new Vector3(_startPos.x, 0, _startPos.z),
-            new Vector3(_endPos.x, 0, _endPos.z),
-            t
-        );
-
-        // Parabolic interpolation in Y
-        float y = Mathf.Lerp(_startPos.y, _endPos.y, t) + _arcHeight * 4 * t * (1 - t);
-
-        Vector3 newPos = new Vector3(horizontalPos.x, y, horizontalPos.z);
-
-        // Update rigidbody velocity
-        Vector3 displacement = newPos - _ballRb.position;
-        Vector3 velocity = displacement / Time.deltaTime;
-        _ballRb.velocity = velocity;
-
-        // Rolling rotation
-        Vector3 moveDir = displacement.normalized;
-        Vector3 rollAxis = Vector3.Cross(moveDir, Vector3.up);
-
-        float radius = _ballInstance.transform.localScale.x * 0.5f;
-        float speed = displacement.magnitude / Time.deltaTime;
-
-        _ballRb.angularVelocity = -rollAxis * (speed / radius);
-
-        _ballRb.MovePosition(newPos); // Rigid body position update
-
-        // Ball reached the hoop
-        if (_elapsed >= _duration)
-        {
-            // Update physics according to if player is aiming for the hoop or for the backboard
-            _ballRb.velocity = (_shootingSpeed >= minBackboardSpeed) ? (Vector3.forward * _fallSpeed * 0.2f) : (Vector3.down * _fallSpeed);
-            _ballRb.useGravity = true; // Hand control back to physics
-        }
+        playerInstance.rotation = Quaternion.LookRotation(direction);
     }
 
     // Compute shot based on input strength
-    public void OnBallShot(float shootingSpeed)
-    {
-        _shootingSpeed = shootingSpeed;
-        UpdateTarget(shootingSpeed);
-        _elapsed = 0;
-    }
+    public void OnBallShot(float shootingSpeed) => _ballInstance.Shoot(shootingSpeed);
 
-    // Compute shot logic in relation to right values for hoop and backboard
-    private void UpdateTarget(float shootingSpeed)
+    // Reset game stats for next shot, for AI or player
+    public void ResetGameState(bool aiState = false)
     {
-        _diversion = 0;
-        bool isHoopSpeed = (shootingSpeed >= minHoopSpeed && shootingSpeed <= maxHoopSpeed);
-        bool isBackboardSpeed = (shootingSpeed >= minBackboardSpeed && shootingSpeed <= maxBackboardSpeed);
-        
-        if (isBackboardSpeed) 
-        { 
-            _endPos = Backboard.position;
-        } else if (isHoopSpeed)
+        if (!aiState)
         {
-            _endPos = HoopBasket.position;
-        }
-        else if (shootingSpeed > maxBackboardSpeed)
-        {
-            _endPos = Backboard.position;
-            _diversion = 0.8f;
+            scoreText.gameObject.SetActive(false);
+            UpdatePosition(ref currentPositionPlayer, _characterInstance, Vector3.zero);
+            CameraController.Instance.SetupPlayerCamera(_characterInstance.GetChild(1).transform);
+            InputManager.Instance.RestartShot();
         } else
         {
-            bool isAlmostHoopSpeed = (shootingSpeed > maxHoopSpeed && (shootingSpeed - maxHoopSpeed) <= 5f)
-                || (shootingSpeed < minHoopSpeed && (minHoopSpeed - shootingSpeed) <= 5f);
-            _diversion = isAlmostHoopSpeed ? 0.2f : 0.8f;
+            UpdatePosition(ref currentPositionOpponent, _opponentInstance, _opponentPositionOffset);
         }
-
-        if (_diversion == 0) return;
-
-        int sign = UnityEngine.Random.value < 0.5f ? -1 : 1;
-        int axis = UnityEngine.Random.value < 0.5f ? -1 : 1;
-        if (axis == -1) _endPos.x += (_diversion * sign);
-        if (axis == 1) _endPos.z += (_diversion * sign);
     }
 
-    // Reset game stats for next shot
-    public void ResetGameState()
+    // Called on shot succeeded, for AI and player
+    public void Win(int points, bool aiWon)
     {
-        scoreText.gameObject.SetActive(false);
-        CameraController.Instance.ResetCamera();
-        UpdatePosition();
-        InputManager.Instance.RestartShot();
-        BallController.Instance.ResetState();
+        if (aiWon)
+        {
+            OpponentScore += points;
+            opponentScoreText.text = string.Format("AI Score: {0}", OpponentScore);
+            currentPositionOpponent++;  // Update opponent position for next shot
+        } else
+        {
+            points *= FireballController.Instance.FireballMultiplier;
+            scoreText.text = string.Format("+{0} points!", points);  // Show single score UI (only player)
+            scoreText.gameObject.SetActive(true);
+            TotalScore += points;
+            totalScoreText.text = string.Format("Score: {0}", TotalScore);
+            currentPositionPlayer++; // Update player position for next shot
+
+            // Manage fireball mode
+            FireballController.Instance.AddScore((float)points / 8);
+        }
     }
 
-    // Called on shot succeeded
-    public void Win(int points)
+    public void Lose(bool aiLost)
     {
-        scoreText.text = string.Format("{0} points!", points);
-        scoreText.gameObject.SetActive(true);
-        TotalScore += points;
-        totalScoreText.text = string.Format("Score: {0}", TotalScore);
-        currentPosition++; // Update player position for next shot
+        if (aiLost) return;
+        FireballController.Instance.OnMissedShot();   // Set Fireball counter to zero if 1 shot missed
+        ResetGameState();   // Reset player state for next shot
     }
+
+    
 
     // Manage game states
     public void UpdateGameState(GameState newState)
