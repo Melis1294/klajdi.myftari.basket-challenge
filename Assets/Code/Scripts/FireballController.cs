@@ -23,6 +23,9 @@ public class FireballController : MonoBehaviour
     private Color _normalColor = new Color(150f / 255f, 150f / 255f, 150f / 255f);
     private Color _bonusColor = new Color(233f / 255f, 79f / 255f, 55f / 255f);
 
+    // Audio
+    [SerializeField] private AudioClip fireball;
+
     public static FireballController Instance { get; private set; }
 
     private void Awake()
@@ -105,8 +108,10 @@ public class FireballController : MonoBehaviour
     }
     private void UpdateSliderColor()
     {
-        if (FireballMultiplier == 2)
+        if (FireballMultiplier == 2) { 
             _sliderFill.color = _bonusColor;
+            GameManager.Instance.SFXManager.PlayOneShot(fireball);
+        }
         else
             _sliderFill.color = _normalColor;
     }

@@ -9764,3 +9764,5 @@ MonoBehaviour:
   minBackboardSpeed: 70
   maxBackboardSpeed: 75
   AIBall: 0
+  bounce: {fileID: 8300000, guid: f4232bbf4b6c7f548ae5d7d20e6e4914, type: 3}
+  hoop: {fileID: 8300000, guid: 7cdd5bb30cd832d428cd74a513a4e8b0, type: 3}
