@@ -16,7 +16,6 @@ public class GameManager : MonoBehaviour
     private Transform[] _shootingZones;
     private BallController _ballInstance;
     private BallController _opponentBallInstance;
-    public static GameManager Instance { get; private set; }
 
     public int TotalScore { get;  private set; }
 
@@ -37,6 +36,9 @@ public class GameManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI opponentScoreText;
     public int OpponentScore { get; private set; }
     private Transform _opponentInstance;
+    
+
+    public static GameManager Instance { get; private set; }
 
     private void Awake()
     {
@@ -135,7 +137,7 @@ public class GameManager : MonoBehaviour
     public void OnBallShot(float shootingSpeed) => _ballInstance.Shoot(shootingSpeed);
 
     // Reset game stats for next shot, for AI or player
-    public void ResetGameState(bool aiState)
+    public void ResetGameState(bool aiState = false)
     {
         if (!aiState)
         {
@@ -159,13 +161,26 @@ public class GameManager : MonoBehaviour
             currentPositionOpponent++;  // Update opponent position for next shot
         } else
         {
+            points *= FireballController.Instance.FireballMultiplier;
             scoreText.text = string.Format("{0} points!", points);  // Show single score UI (only player)
             scoreText.gameObject.SetActive(true);
             TotalScore += points;
             totalScoreText.text = string.Format("Score: {0}", TotalScore);
             currentPositionPlayer++; // Update player position for next shot
+
+            // Manage fireball mode
+            FireballController.Instance.AddScore((float)points / 8);
         }
     }
+
+    public void Lose(bool aiLost)
+    {
+        if (aiLost) return;
+        FireballController.Instance.OnMissedShot();   // Set Fireball counter to zero if 1 shot missed
+        ResetGameState();   // Reset player state for next shot
+    }
+
+    
 
     // Manage game states
     public void UpdateGameState(GameState newState)
