@@ -408,6 +408,7 @@ GameObject:
   - component: {fileID: 573919515}
   - component: {fileID: 573919517}
   - component: {fileID: 573919516}
+  - component: {fileID: 573919518}
   m_Layer: 0
   m_Name: T_Title
   m_TagString: Untagged
@@ -534,6 +535,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 573919514}
   m_CullTransparentMesh: 1
+--- !u!114 &573919518
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 573919514}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3cff54fd7fa24ca4d9ee2805728efad8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  timeBeforeBlinkStart: 0.5
+  blinkInterval: 0.7
+  titleText: {fileID: 0}
 --- !u!1 &781075604
 GameObject:
   m_ObjectHideFlags: 0
@@ -1214,6 +1230,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 308b578f6d554f14b9814e1a96d44cff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _retryTimer: 1000
 --- !u!4 &1977009452
 Transform:
   m_ObjectHideFlags: 0

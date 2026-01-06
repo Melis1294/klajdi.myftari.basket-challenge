@@ -8,7 +8,7 @@ public class FireballController : MonoBehaviour
     private const float FIREBALL_MAX_VALUE = 1f;
 
     [SerializeField] private float drainSpeedIncreasing = 1f;
-    [SerializeField] private float drainSpeedOnFire = 0.17f;
+    [SerializeField] private float drainSpeedOnFire = 0.085f;
     [SerializeField] private float drainSpeedMiss = 2f;
     private float currentDrainSpeed;
 
@@ -21,10 +21,11 @@ public class FireballController : MonoBehaviour
     private Slider _slider;
     private Image _sliderFill;
     private Color _normalColor = new Color(150f / 255f, 150f / 255f, 150f / 255f);
-    private Color _bonusColor = new Color(233f / 255f, 79f / 255f, 55f / 255f);
+    private Color _bonusColor = new Color(255f / 255f, 140f / 255f, 110f / 255f);
 
     // Audio
-    [SerializeField] private AudioClip fireball;
+    [SerializeField] private AudioClip fireOn;
+    [SerializeField] private AudioClip fireOff;
 
     public static FireballController Instance { get; private set; }
 
@@ -42,7 +43,7 @@ public class FireballController : MonoBehaviour
         targetValue = 0f;
         _slider = GetComponent<Slider>();
         _sliderFill = _slider.gameObject.transform.Find("Fill Area").Find("Fill").GetComponent<Image>();
-        UpdateSliderColor();
+        //UpdateSliderColor();
     }
 
     private void Update()
@@ -109,10 +110,16 @@ public class FireballController : MonoBehaviour
     private void UpdateSliderColor()
     {
         if (FireballMultiplier == 2) { 
+            GameManager.Instance.SFXManager.PlayOneShot(fireOn);
             _sliderFill.color = _bonusColor;
-            GameManager.Instance.SFXManager.PlayOneShot(fireball);
         }
         else
+        {
+            // Play fire off only if fireball was on before losing bonus
+            if (_sliderFill.color == _bonusColor)
+                GameManager.Instance.SFXManager.PlayOneShot(fireOff);
+
             _sliderFill.color = _normalColor;
+        }
     }
 }

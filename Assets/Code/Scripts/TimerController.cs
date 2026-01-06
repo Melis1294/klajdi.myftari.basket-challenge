@@ -70,6 +70,8 @@ public class TimerController : MonoBehaviour
             RemainingTime = 0;
             GameManager.Instance.UpdateGameState(GameManager.GameState.GameOver);
             GameManager.Instance.SFXManager.PlayOneShot(buzzer);
+            // Reset fireball slider so the particles of the fireball
+            FireballController.Instance.OnMissedShot();
             StartCoroutine(SetupGameOver());
         }
         int minutes = Mathf.FloorToInt(RemainingTime / 60);

@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
@@ -22,6 +22,8 @@ public class BallController : MonoBehaviour
     private Vector3 _startPos;
     private Vector3 _endPos;
     private Rigidbody _ballRb;
+    private Transform _playerHand;
+    private Vector3 _playerHandOffset;
 
     [SerializeField] float minHoopSpeed = 40;
     [SerializeField] float maxHoopSpeed = 50;
@@ -29,7 +31,7 @@ public class BallController : MonoBehaviour
     [SerializeField] float maxBackboardSpeed = 75;
     private float _diversion = 0;
     private float _shootingSpeed;
-    private GameObject _fireTrails;
+    private GameObject _fireTrails; // Particle System for the fireball
 
     // Event to notify AI that he has the ball again
     public bool AIBall;
@@ -39,6 +41,39 @@ public class BallController : MonoBehaviour
     private AudioSource _sfxManager;
     [SerializeField] private AudioClip bounce;
     [SerializeField] private AudioClip hoop;
+    [SerializeField] private AudioClip woosh;
+    [SerializeField] private AudioClip rim;
+    [SerializeField] private AudioClip backboard;
+    [SerializeField] private AudioClip dribble;
+
+    // PhysicsMethods
+    public float power = 10.0f;
+
+    // Dribble
+    [SerializeField] private float dribbleHeight = 0.8f;
+    [SerializeField] private float dribbleSpeed = 5f;
+    private float _prevYOffset;
+    private bool _goingDown;
+
+    private float _dribbleTime;
+    private bool _isDribbling;
+
+    private enum BallState
+    {
+        Dribbling,
+        Held,
+        Shooting
+    }
+
+    private BallState _state;
+
+
+    enum ShotType
+    {
+        Backboard,
+        Rim,
+        Hoop
+    }
 
     private void Awake()
     {
@@ -46,18 +81,83 @@ public class BallController : MonoBehaviour
         _ballCollider = GetComponent<Collider>();
     }
 
-    // Update is called once per frame
+    private void LateUpdate()
+    {
+        if (_state == BallState.Held)
+        {
+            transform.position = _playerHand.position;
+            //transform.position = _playerHand.TransformPoint(_playerHandOffset);
+        }
+    }
+
     void FixedUpdate()
     {
-        // ball in the air
-        if (_elapsed < _duration) ComputeFlight();
-        if (!AIBall) _fireTrails.SetActive(FireballController.Instance.FireballMultiplier == 2);
+        if (_state == BallState.Shooting)
+        {
+            if (_elapsed < _duration)
+                ComputeFlight();
+            return;
+        }
+
+        if (_state == BallState.Dribbling)
+        {
+            _dribbleTime += Time.deltaTime * dribbleSpeed;
+
+            float yOffset = Mathf.Abs(Mathf.Sin(_dribbleTime)) * dribbleHeight;
+            transform.position = BallStart.position - new Vector3(0, yOffset, 0);
+
+            bool nowGoingDown = _prevYOffset > yOffset;
+
+            if (_goingDown && !nowGoingDown)
+                _sfxManager.PlayOneShot(dribble);
+
+            float scaleSize = yOffset + 0.1f - ((1 + Mathf.Abs(Mathf.Sin(_dribbleTime))) * 1.1f);
+            transform.localScale = new Vector3(scaleSize, 1f, scaleSize);
+
+            _goingDown = nowGoingDown;
+            _prevYOffset = yOffset;
+        }
+
+        if (!AIBall)
+            _fireTrails.SetActive(FireballController.Instance.FireballMultiplier == 2);
     }
+
+    // Update is called once per frame
+    //void FixedUpdate()
+    //{
+    //    // ball in the air
+    //    if (_elapsed < _duration) ComputeFlight();
+    //    else if (_isDribbling)
+    //    {
+    //        _dribbleTime += Time.deltaTime * dribbleSpeed;
+
+    //        float yOffset = Mathf.Abs(Mathf.Sin(_dribbleTime)) * dribbleHeight;
+    //        transform.position = BallStart.position - new Vector3(0, yOffset, 0);
+
+    //        // Direction detection
+    //        bool nowGoingDown = _prevYOffset > yOffset;
+
+    //        // Bottom reached → bounce sound
+    //        if (_goingDown && !nowGoingDown)
+    //        {
+    //            _sfxManager.PlayOneShot(dribble);
+    //        }
+
+    //        float scaleSize = yOffset + 0.1f - ((1 + Mathf.Abs(Mathf.Sin(_dribbleTime))) * 1.1f);
+    //        transform.localScale = new Vector3(scaleSize, 1f, scaleSize);
+
+    //        _goingDown = nowGoingDown;
+    //        _prevYOffset = yOffset;
+    //    }
+    //    if (!AIBall) _fireTrails.SetActive(FireballController.Instance.FireballMultiplier == 2);
+    //}
 
     private void Start()
     {
         if (!AIBall) _fireTrails = transform.GetChild(0).gameObject;
         _sfxManager = GameManager.Instance.SFXManager;
+        //PhysicsMethods
+        //Predict();
     }
 
     void ComputeFlight()
@@ -97,6 +197,7 @@ public class BallController : MonoBehaviour
         if (_elapsed >= _duration)
         {
             // Update physics according to if player is aiming for the hoop or for the backboard
+            _ballRb.isKinematic = false;
             _ballRb.velocity = (_shootingSpeed >= minBackboardSpeed) ? (Vector3.forward * _fallSpeed * 0.2f) : (Vector3.down * _fallSpeed);
             _ballRb.useGravity = true; // Hand control back to physics
         }
@@ -139,9 +240,47 @@ public class BallController : MonoBehaviour
 
     public void Shoot(float shootingSpeed)
     {
+        _sfxManager.PlayOneShot(woosh);
+
+        _state = BallState.Shooting;
+
+        _ballRb.isKinematic = true; // still script-driven
+        transform.SetParent(null);
+
         _shootingSpeed = shootingSpeed;
         UpdateTarget(shootingSpeed);
-        _elapsed = 0;
+        _elapsed = 0f;
+    }
+
+
+    //public void Shoot(float shootingSpeed)
+    //{
+    //    // Ball shot sfx
+    //    _sfxManager.PlayOneShot(woosh);
+
+    //    _shootingSpeed = shootingSpeed;
+    //    UpdateTarget(shootingSpeed);
+    //    _elapsed = 0;
+    //}
+
+    // Called before the shot, when the caracter is animating the shot
+    public void PrepareShot(Transform hand, Vector3 offset)
+    {
+        _state = BallState.Held;
+        _playerHand = hand;
+        _playerHandOffset = offset;
+
+        _isDribbling = false;
+
+        _ballRb.velocity = Vector3.zero;
+        _ballRb.angularVelocity = Vector3.zero;
+        _ballRb.isKinematic = true;
+
+        transform.SetParent(hand);
+        transform.position = hand.position + offset;
+        //transform.rotation = Quaternion.identity;
+        transform.localScale = Vector3.one;
+        
     }
 
     private void SetupBallShoot()
@@ -157,18 +296,51 @@ public class BallController : MonoBehaviour
     public void ResetState()
     {
         SetupBallShoot();
-        
+
+        _state = BallState.Dribbling;
+
         // Reset ball position w.r.t. player, and physics
         transform.position = _startPos;
-        transform.LookAt(GameManager.Instance.HoopBasket.transform);
+        //transform.LookAt(GameManager.Instance.HoopBasket.transform);
         ResetPhysics();
 
         // Notify AI that he owns the ball again
         AIController aiParent = transform.GetComponentInParent<AIController>();
         if (aiParent) aiParent.HasBall();
+        else StartDribble();
     }
 
-    void ResetPhysics()
+    private void StartDribble()
+    {
+        _state = BallState.Dribbling;
+
+        _isDribbling = true;
+        _dribbleTime = 0f;
+        _prevYOffset = 0f;
+        _goingDown = true;
+
+        _ballRb.isKinematic = true;
+    }
+
+    public void StopDribble()
+    {
+        _isDribbling = false;
+        _dribbleTime = 0f;
+
+        transform.localScale = Vector3.one;
+
+        // Snap cleanly to hand position
+        //transform.position = BallStart.position;
+
+        //// Reset physics completely
+        //_ballRb.velocity = Vector3.zero;
+        //_ballRb.angularVelocity = Vector3.zero;
+        //_ballRb.isKinematic = false;
+        //// Get original ball shape
+        //transform.localScale = Vector3.one;
+    }
+
+    public void ResetPhysics()
     {
         _ballRb.useGravity = false;
         _ballRb.velocity = Vector3.zero;
@@ -192,7 +364,7 @@ public class BallController : MonoBehaviour
             if (_hoopEntered)
                 GameManager.Instance.ResetGameState(AIBall);
             else
-                GameManager.Instance.Lose(AIBall);  // To manage fireball counter
+                GameManager.Instance.Lose(AIBall);  // To manage fireOn counter
             ResetState();
             return;
         }
@@ -201,17 +373,19 @@ public class BallController : MonoBehaviour
         if (collision.collider.CompareTag(_backboardTag) && !_backboardWasTouched && !_rimWasTouched)
         {
             _backboardWasTouched = true;
+            _sfxManager.PlayOneShot(backboard);
+            StartCoroutine(GameManager.Instance.SpawnShotParticles(transform.position, (int)ShotType.Backboard));
             return;
         }
 
         if (!collision.collider.transform.parent.CompareTag(_rimTag) || _rimWasTouched) return;
         _rimWasTouched = true;
+
+        _sfxManager.PlayOneShot(rim);
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        _sfxManager.PlayOneShot(hoop);
-
         if (!other.CompareTag(_hoopTag) || _hoopEntered) return;
         
         // Manage score cases if shot was scored
@@ -224,6 +398,19 @@ public class BallController : MonoBehaviour
         else if (_rimWasTouched) points = 2;
 
         _hoopEntered = true;
+        _sfxManager.PlayOneShot(hoop);
+        StartCoroutine(GameManager.Instance.SpawnShotParticles(transform.position, _rimWasTouched ? (int)ShotType.Rim : (int)ShotType.Hoop));
         GameManager.Instance.Win(points, AIBall);
+    }
+
+    //PhysicsMethods
+    public Vector3 CalculateForce()
+    {
+        return transform.forward * power;
+    }
+
+    private void Predict()
+    {
+        GameManager.Instance.predict(gameObject, transform.position, CalculateForce());
     }
 }

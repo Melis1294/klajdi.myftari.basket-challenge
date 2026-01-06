@@ -42,7 +42,7 @@ GameObject:
   - component: {fileID: 1044463193178908204}
   m_Layer: 0
   m_Name: BallStartPos
-  m_TagString: Untagged
+  m_TagString: BallPos
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -54,13 +54,44 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3039657676785084469}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 2.156, z: 0.913}
+  m_LocalRotation: {x: -0.521621, y: -0.16078678, z: 0.49858516, w: -0.6734033}
+  m_LocalPosition: {x: 0.43124625, y: 1.0487456, z: 0.52447355}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 7483116572789041910}
   m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &4769604115367135464
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3469121108379337529}
+  m_Layer: 0
+  m_Name: BallLaunchPos
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3469121108379337529
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4769604115367135464}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.078, y: 0.099, z: 0.191}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7594991696269639271}
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7483116572789041865
 GameObject:
@@ -183,10 +214,19 @@ PrefabInstance:
       propertyPath: m_Name
       value: Dribble
       objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: ba97bac186999fb428918f99dbafc5fa, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: 919f25e9dae14214c897325be28c6db3, type: 2}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ba97bac186999fb428918f99dbafc5fa, type: 3}
 --- !u!4 &7192679303125540873 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: ba97bac186999fb428918f99dbafc5fa, type: 3}
+  m_PrefabInstance: {fileID: 7231442667209967586}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &7594991696269639271 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8269195505564239483, guid: ba97bac186999fb428918f99dbafc5fa, type: 3}
   m_PrefabInstance: {fileID: 7231442667209967586}
   m_PrefabAsset: {fileID: 0}

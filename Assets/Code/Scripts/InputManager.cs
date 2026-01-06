@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 
 public class InputManager : MonoBehaviour
@@ -19,7 +20,7 @@ public class InputManager : MonoBehaviour
     private Vector2 _endTouchPos;
     #endregion
     #region UI
-    [SerializeField] TextMeshProUGUI strengthText;
+    [SerializeField] Slider slider;
     #endregion
     public static InputManager Instance { get; private set; }
 
@@ -37,6 +38,8 @@ public class InputManager : MonoBehaviour
         }
         // Subscribe method to state change events
         GameManager.OnGameStateChanged += GameManagerOnGameStateChanged;
+
+        slider.value = 0;
     }
 
     // Start is called before the first frame update
@@ -148,7 +151,6 @@ public class InputManager : MonoBehaviour
     void ShootAndResetParams()
     {
         GameManager.Instance.OnBallShot(_strength);
-        CameraController.Instance.StartMoving();
         ResetParams();
     }
 
@@ -163,7 +165,7 @@ public class InputManager : MonoBehaviour
     // Manage strength UI
     void UpdateShotUI(double strength = 0)
     {
-        strengthText.text = string.Format("70-75\n40-50\n{0}", strength);
+        slider.value = (float)strength;
     }
 
     // Manage states change
@@ -175,7 +177,7 @@ public class InputManager : MonoBehaviour
             if (Input.GetMouseButton(0) || Input.touchCount > 0)
                 ShootAndResetParams();
 
-            strengthText.enabled = false;
+            slider.enabled = false;
         }
     }
 }
