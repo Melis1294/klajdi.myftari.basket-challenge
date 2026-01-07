@@ -9771,5 +9771,5 @@ MonoBehaviour:
   backboard: {fileID: 8300000, guid: 54a3f717f7d7ec8458fcd5948f1341d7, type: 3}
   dribble: {fileID: 8300000, guid: 10fd63c8ed6632f4ab4a447a36afa665, type: 3}
   power: 10
-  dribbleHeight: 0.9
+  dribbleHeight: 0.8
   dribbleSpeed: 5.8

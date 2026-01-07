@@ -36,6 +36,7 @@ public class BallController : MonoBehaviour
     // Event to notify AI that he has the ball again
     public bool AIBall;
     private Collider _ballCollider;
+    public Transform Opponent;
 
     // Audio
     private AudioSource _sfxManager;
@@ -104,7 +105,16 @@ public class BallController : MonoBehaviour
             _dribbleTime += Time.deltaTime * dribbleSpeed;
 
             float yOffset = Mathf.Abs(Mathf.Sin(_dribbleTime)) * dribbleHeight;
-            transform.position = BallStart.position - new Vector3(0, yOffset, 0);
+            try
+            {
+                transform.position = BallStart.position - new Vector3(0, yOffset, 0);
+            } catch (NullReferenceException e)
+            {
+                if (AIBall)
+                    Debug.LogWarning("Ai ball start not assigned");
+                else
+                    Debug.LogWarning("Character ball start not assigned");
+            }
 
             bool nowGoingDown = _prevYOffset > yOffset;
 
@@ -245,13 +255,16 @@ public class BallController : MonoBehaviour
         _state = BallState.Shooting;
 
         _ballRb.isKinematic = true; // still script-driven
-        transform.SetParent(null);
+
+
+        if (AIBall) transform.SetParent(Opponent);
+        else transform.SetParent(null);
 
         _shootingSpeed = shootingSpeed;
         UpdateTarget(shootingSpeed);
         _elapsed = 0f;
+        _ballCollider.enabled = true;
     }
-
 
     //public void Shoot(float shootingSpeed)
     //{
@@ -264,11 +277,10 @@ public class BallController : MonoBehaviour
     //}
 
     // Called before the shot, when the caracter is animating the shot
-    public void PrepareShot(Transform hand, Vector3 offset)
+    public void PrepareShot(Transform hand)
     {
         _state = BallState.Held;
         _playerHand = hand;
-        _playerHandOffset = offset;
 
         _isDribbling = false;
 
@@ -277,10 +289,7 @@ public class BallController : MonoBehaviour
         _ballRb.isKinematic = true;
 
         transform.SetParent(hand);
-        transform.position = hand.position + offset;
-        //transform.rotation = Quaternion.identity;
-        transform.localScale = Vector3.one;
-        
+        transform.position = hand.position;
     }
 
     private void SetupBallShoot()
@@ -289,12 +298,13 @@ public class BallController : MonoBehaviour
         _rimWasTouched = false;
         _backboardWasTouched = false;
 
-        _startPos = BallStart.position;
+        _startPos = BallStart?.position ?? transform.position;
         _endPos = GameManager.Instance.HoopBasket.position;
     }
 
     public void ResetState()
     {
+        _ballCollider.enabled = false;
         SetupBallShoot();
 
         _state = BallState.Dribbling;
@@ -303,11 +313,11 @@ public class BallController : MonoBehaviour
         transform.position = _startPos;
         //transform.LookAt(GameManager.Instance.HoopBasket.transform);
         ResetPhysics();
+        //StartDribble();
 
         // Notify AI that he owns the ball again
         AIController aiParent = transform.GetComponentInParent<AIController>();
         if (aiParent) aiParent.HasBall();
-        else StartDribble();
     }
 
     private void StartDribble()
@@ -387,7 +397,7 @@ public class BallController : MonoBehaviour
     private void OnTriggerEnter(Collider other)
     {
         if (!other.CompareTag(_hoopTag) || _hoopEntered) return;
-        
+
         // Manage score cases if shot was scored
         int points = 3;
         if (_backboardWasTouched)

@@ -17,7 +17,6 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject[] balls;
     private Transform _characterInstance;
     private Transform _characterHand;
-    [SerializeField] Vector3 _characterHandOffset = new Vector3(0f, -0.1f, 0f);
     private Transform[] _shootingZones;
     private BallController _ballInstance;
     private BallController _opponentBallInstance;
@@ -37,7 +36,7 @@ public class GameManager : MonoBehaviour
 
     // Game mode
     public bool IsSinglePlayer;
-    private Vector3 _opponentPositionOffset = new Vector3(-0.5f, 0, 0);
+    private Vector3 _opponentPositionOffset = new Vector3(-0.95f, 0, 0);
     [SerializeField] int currentPositionOpponent = 0;
     [SerializeField] private TextMeshProUGUI opponentScoreText;
     public int OpponentScore { get; private set; }
@@ -113,13 +112,13 @@ public class GameManager : MonoBehaviour
     }
 
     // PhysicsMethod
-    private void FixedUpdate()
-    {
-        if (currentPhysicsScene.IsValid())
-        {
-            currentPhysicsScene.Simulate(Time.fixedDeltaTime);
-        }
-    }
+    //private void FixedUpdate()
+    //{
+    //    if (currentPhysicsScene.IsValid())
+    //    {
+    //        currentPhysicsScene.Simulate(Time.fixedDeltaTime);
+    //    }
+    //}
 
     //PhysicsMethod
     public void predict(GameObject subject, Vector3 currentPosition, Vector3 force)
@@ -170,14 +169,10 @@ public class GameManager : MonoBehaviour
         {
             CameraController.Instance.SetupPlayerCamera(_characterInstance.GetChild(1).transform);
             var dribbleGuy = _characterInstance.transform.GetChild(2);
-            //_characterHand = characterAnimator.GetBoneTransform(HumanBodyBones.RightHand);
             _characterHand = dribbleGuy.transform.GetChild(1).transform.GetChild(2).transform.GetChild(0).transform.GetChild(0).transform.GetChild(2).transform.GetChild(0).transform.GetChild(0).transform.GetChild(0).transform.GetChild(5);
-            //_ballInstance.transform.position = charachterHand.position + new Vector3(0f, -0.1f, 0f);
-            //TODO: Play animation of ball dribbling
-            //_ballInstance.transform.SetParent(charachterHand);
 
             Transform ballStart = _characterInstance.transform.GetChild(0).transform;
-            ballStart.position = _characterHand.position + _characterHandOffset;
+            ballStart.position = _characterHand.position;
             _ballInstance = Instantiate(balls[0], ballStart.position, Quaternion.identity).GetComponent<BallController>();
             _ballInstance.BallStart = ballStart;
             _ballInstance.ResetState();
@@ -200,9 +195,11 @@ public class GameManager : MonoBehaviour
             Transform ballStart = _opponentInstance.transform.GetChild(0).transform;
             _opponentBallInstance = Instantiate(balls[1], ballStart.position, Quaternion.identity).GetComponent<BallController>();
 
-            _opponentInstance.gameObject.AddComponent<AIController>().BallInstance = _opponentBallInstance;  // Attach AI script to opponent
+            //_opponentInstance.gameObject.AddComponent<AIController>().BallInstance = _opponentBallInstance;  // Attach AI script to opponent
+            _opponentInstance.GetComponent<AIController>().BallInstance = _opponentBallInstance;
             _opponentBallInstance.transform.SetParent(_opponentInstance); // Set AI ball to AI character
             _opponentBallInstance.AIBall = true; // Set AI ball
+            _opponentBallInstance.Opponent = _opponentInstance;
             _opponentBallInstance.BallStart = ballStart;
             _opponentBallInstance.ResetState();
         }
@@ -227,7 +224,7 @@ public class GameManager : MonoBehaviour
     public void OnBallShot(float shootingSpeed)
     {
         characterAnimator.SetBool("shoot", true);
-        _ballInstance.PrepareShot(_characterHand, _characterHandOffset);
+        _ballInstance.PrepareShot(_characterHand);
         //_ballInstance.StopDribble();
         //_ballInstance.transform.position = _characterHand.position + _characterHandOffset;
         //_ballInstance.transform.SetParent(_characterHand);
@@ -237,8 +234,6 @@ public class GameManager : MonoBehaviour
     private IEnumerator ShootBall(float shootingSpeed)
     {
         yield return new WaitForSeconds(0.7f);
-        //_ballInstance.transform.SetParent(null);
-        //_ballInstance.StopDribble();
         _ballInstance.Shoot(shootingSpeed);
         CameraController.Instance.StartMoving();
     }
