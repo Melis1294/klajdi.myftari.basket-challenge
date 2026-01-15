@@ -11,6 +11,7 @@ public class GameManager : MonoBehaviour
     public Transform CameraTarget;
     public Transform Backboard;
     public Transform ShootingZone;
+    public Transform EndGameZoneEmpty;
     [SerializeField] private Transform mainCharacter;
     [SerializeField] private Transform opponentCharacter;
     [SerializeField] int currentPositionPlayer = 0;
@@ -18,6 +19,7 @@ public class GameManager : MonoBehaviour
     private Transform _characterInstance;
     private Transform _characterHand;
     private Transform[] _shootingZones;
+    private Transform[] _endGameZones;
     private BallController _ballInstance;
     private BallController _opponentBallInstance;
 
@@ -36,7 +38,7 @@ public class GameManager : MonoBehaviour
 
     // Game mode
     public bool IsSinglePlayer;
-    private Vector3 _opponentPositionOffset = new Vector3(-0.95f, 0, 0);
+    [SerializeField] Vector3 opponentPositionOffset = new Vector3(-0.69f, 0, 0.27f);
     [SerializeField] int currentPositionOpponent = 0;
     [SerializeField] private TextMeshProUGUI opponentScoreText;
     public int OpponentScore { get; private set; }
@@ -63,6 +65,8 @@ public class GameManager : MonoBehaviour
     public GameObject dummy;
     public int maxIterations;
 
+    private int _lastBallsShotCounter;
+
     private void Awake()
     {
         // Prevent class instance duplicates
@@ -77,19 +81,14 @@ public class GameManager : MonoBehaviour
         }
         UpdateGameState(GameState.Startup);
 
-        // Get shooting zones
-        int childCount = ShootingZone.childCount;
-        _shootingZones = new Transform[childCount];
-
-        for (int i = 0; i < childCount; i++)
-        {
-            _shootingZones[i] = ShootingZone.GetChild(i);
-        }
+        SetupZones();
 
         // Setup Buttons
         endGameButton.onClick.AddListener(() => SceneController.Instance.BackToMainMenu());
         retryButton.onClick.AddListener(() => SceneController.Instance.StartGame());
         menuButton.onClick.AddListener(() => SceneController.Instance.BackToMainMenu());
+
+        _lastBallsShotCounter = 0; // To know if players shot last balls on timer end
 
         // PhysicsMethod
         currentScene = SceneManager.GetActiveScene();
@@ -102,9 +101,39 @@ public class GameManager : MonoBehaviour
         lineRenderer = GetComponent<LineRenderer>();
     }
 
+    private void OnDestroy()
+    {
+        _ballInstance.LastBallShot -= LastBallsShot;
+        _opponentBallInstance.LastBallShot -= LastBallsShot;
+    }
+
+    private void SetupZones()
+    {
+        // Get shooting zones
+        int childCount = ShootingZone.childCount;
+        _shootingZones = new Transform[childCount];
+
+        for (int i = 0; i < childCount; i++)
+        {
+            _shootingZones[i] = ShootingZone.GetChild(i);
+        }
+
+        // Setup zones where to place players and camera at the end of the match
+        childCount = EndGameZoneEmpty.childCount; // Reset value
+        _endGameZones = new Transform[childCount];
+
+        for (int i = 0; i < childCount; i++)
+        {
+            _endGameZones[i] = EndGameZoneEmpty.GetChild(i);
+        }
+    }
+
     public IEnumerator SpawnShotParticles(Vector3 shotPos, int shotType)
     {
         if (shotType > (shotParticles.Length - 1)) throw new ArgumentOutOfRangeException("Particle out of list!");
+
+        Debug.Log("Shot type: " + shotType);
+        if (shotType == 1) Debug.Log("Shot type: RIM");
 
         GameObject shotParticle = Instantiate(shotParticles[shotType], shotPos, Quaternion.identity);
         yield return new WaitForSeconds(3);
@@ -168,16 +197,14 @@ public class GameManager : MonoBehaviour
         if (_characterInstance)
         {
             CameraController.Instance.SetupPlayerCamera(_characterInstance.GetChild(1).transform);
-            var dribbleGuy = _characterInstance.transform.GetChild(2);
-            _characterHand = dribbleGuy.transform.GetChild(1).transform.GetChild(2).transform.GetChild(0).transform.GetChild(0).transform.GetChild(2).transform.GetChild(0).transform.GetChild(0).transform.GetChild(0).transform.GetChild(5);
+            characterAnimator = _characterInstance.GetComponentInChildren<Animator>();
+            _characterHand = characterAnimator.GetBoneTransform(HumanBodyBones.RightHand).GetChild(5);
 
-            Transform ballStart = _characterInstance.transform.GetChild(0).transform;
-            ballStart.position = _characterHand.position;
-            _ballInstance = Instantiate(balls[0], ballStart.position, Quaternion.identity).GetComponent<BallController>();
-            _ballInstance.BallStart = ballStart;
+            _ballInstance = Instantiate(balls[0], _characterHand.position, Quaternion.identity).GetComponent<BallController>();
+            _ballInstance.BallStart = _characterHand;
             _ballInstance.ResetState();
-
-            characterAnimator = dribbleGuy.GetComponent<Animator>();
+            // Subscribe to last ball shot event
+            _ballInstance.LastBallShot += LastBallsShot;
         }
         else
         {
@@ -188,25 +215,35 @@ public class GameManager : MonoBehaviour
     // TODO: Fix initial rotation towards hoop
     void SpawnOpponent()
     {
-        _opponentInstance = Instantiate(opponentCharacter, _shootingZones[currentPositionOpponent].position + _opponentPositionOffset, Quaternion.Euler(0, 180f, 0));
+        _opponentInstance = Instantiate(opponentCharacter, _shootingZones[currentPositionOpponent].position + opponentPositionOffset, Quaternion.Euler(0, 180f, 0));
         if (_opponentInstance)
         {
-            //_opponentInstance.gameObject.GetComponent<PlayerController>().enabled = false;
             Transform ballStart = _opponentInstance.transform.GetChild(0).transform;
-            _opponentBallInstance = Instantiate(balls[1], ballStart.position, Quaternion.identity).GetComponent<BallController>();
+            _opponentBallInstance = Instantiate(balls[1], _opponentInstance.GetComponent<AIController>().OpponentHand.position, Quaternion.identity).GetComponent<BallController>();
 
-            //_opponentInstance.gameObject.AddComponent<AIController>().BallInstance = _opponentBallInstance;  // Attach AI script to opponent
+            // Subscribe to last ball shot event
+            _opponentBallInstance.LastBallShot += LastBallsShot;
+
             _opponentInstance.GetComponent<AIController>().BallInstance = _opponentBallInstance;
-            _opponentBallInstance.transform.SetParent(_opponentInstance); // Set AI ball to AI character
             _opponentBallInstance.AIBall = true; // Set AI ball
-            _opponentBallInstance.Opponent = _opponentInstance;
-            _opponentBallInstance.BallStart = ballStart;
+            _opponentBallInstance.Opponent = _opponentInstance.GetComponent<AIController>();
+            _opponentBallInstance.BallStart = _opponentInstance.GetComponent<AIController>().OpponentHand;
             _opponentBallInstance.ResetState();
         }
         else
         {
             throw new NullReferenceException("Opponent instance not found!");
         }
+    }
+
+    void LastBallsShot()
+    {
+        _lastBallsShotCounter++;
+    }
+
+    public bool LastBallsAreShot()
+    {
+        return _lastBallsShotCounter == 2;
     }
 
     // Called on first shot setup and in next ones, from both player and opponent
@@ -225,9 +262,6 @@ public class GameManager : MonoBehaviour
     {
         characterAnimator.SetBool("shoot", true);
         _ballInstance.PrepareShot(_characterHand);
-        //_ballInstance.StopDribble();
-        //_ballInstance.transform.position = _characterHand.position + _characterHandOffset;
-        //_ballInstance.transform.SetParent(_characterHand);
         StartCoroutine(ShootBall(shootingSpeed));
     }
 
@@ -245,12 +279,13 @@ public class GameManager : MonoBehaviour
         {
             scoreText.gameObject.SetActive(false);
             UpdatePosition(ref currentPositionPlayer, _characterInstance, Vector3.zero);
+            // Reset camera position for next shot
             CameraController.Instance.SetupPlayerCamera(_characterInstance.GetChild(1).transform);
             InputManager.Instance.RestartShot();
             characterAnimator.SetBool("shoot", false);
         } else
         {
-            UpdatePosition(ref currentPositionOpponent, _opponentInstance, _opponentPositionOffset);
+            UpdatePosition(ref currentPositionOpponent, _opponentInstance, opponentPositionOffset);
         }
     }
 
@@ -283,6 +318,46 @@ public class GameManager : MonoBehaviour
         ResetGameState();   // Reset player state for next shot
     }
 
+    // Activate idle animations and remove balls on game end
+    public void GameEnded(bool evenPoints)
+    {
+        if (evenPoints) return;
+
+        characterAnimator.SetBool("game_ended", true);
+        _opponentInstance.GetComponent<AIController>().GameOver();
+
+        _ballInstance.GameOver();
+        _opponentBallInstance.GameOver();
+    }
+
+    public void Victory(bool mainCharWins)
+    {
+        MoveCharactersToPodiums(mainCharWins);
+        characterAnimator.SetTrigger(mainCharWins ? "victory" : "defeat");
+        // Opposite of main player
+        _opponentInstance.GetComponent<AIController>().Victory(!mainCharWins);
+    }
+
+    private void MoveCharactersToPodiums(bool playerWon)
+    {
+        EndGameZone mainCharZone = playerWon ? EndGameZone.WinnerZone : EndGameZone.LoserZone;
+        EndGameZone opponentZone = playerWon ? EndGameZone.LoserZone : EndGameZone.WinnerZone;
+        _characterInstance.SetParent(_endGameZones[(int)mainCharZone]);
+        _opponentInstance.SetParent(_endGameZones[(int)opponentZone]);
+        ResetCharactersPositions();
+        CameraController.Instance.SetPodiumCamera(_endGameZones[(int)EndGameZone.CameraZone]);
+    }
+
+    // Reset characters positions when they are in the podium so they rotate towards the camera
+    private void ResetCharactersPositions()
+    {
+        _characterInstance.transform.localPosition = Vector3.zero;
+        _characterInstance.transform.localRotation = Quaternion.identity;
+
+        _opponentInstance.transform.localPosition = Vector3.zero;
+        _opponentInstance.transform.localRotation = Quaternion.identity;
+    }
+
     // Manage game states
     public void UpdateGameState(GameState newState)
     {
@@ -311,5 +386,12 @@ public class GameManager : MonoBehaviour
         Play,
         Pause,
         GameOver
+    }
+
+    public enum EndGameZone
+    {
+        WinnerZone,
+        LoserZone,
+        CameraZone
     }
 }

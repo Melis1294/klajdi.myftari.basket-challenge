@@ -1080,6 +1080,37 @@ Transform:
   m_Father: {fileID: 3399562616609919737}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2350131776329055804
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8866227490878647624}
+  m_Layer: 10
+  m_Name: BallCatch
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8866227490878647624
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2350131776329055804}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0, y: 0.00139, z: 0.0014}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3585884774772721862}
+  m_RootOrder: 5
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2459411920593797829
 GameObject:
   m_ObjectHideFlags: 0
@@ -2889,7 +2920,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6434541559640222981}
   m_LocalRotation: {x: -0.50000024, y: -0.4999996, z: 0.5000002, w: -0.5000001}
-  m_LocalPosition: {x: 0.467, y: 1.0487456, z: 0.455}
+  m_LocalPosition: {x: 0.363, y: 0.849, z: 0.325}
   m_LocalScale: {x: 99.99997, y: 99.99998, z: 99.999985}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3725,6 +3756,7 @@ Transform:
   - {fileID: 2059320360504862452}
   - {fileID: 8347167556643060234}
   - {fileID: 8980665304064408107}
+  - {fileID: 8866227490878647624}
   m_Father: {fileID: 4024481996725481595}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

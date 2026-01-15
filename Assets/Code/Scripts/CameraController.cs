@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -16,6 +16,14 @@ public class CameraController : MonoBehaviour
     private float _offset = 2f;
     private float _smoothSpeed = 2.8f;
     public static CameraController Instance { get; private set; }
+    // To compute podium camera move
+    private Quaternion _startRot;
+    private Quaternion _endRot;
+    float _startYaw;
+    float _endYaw;
+    float _startPitch;
+    float _startRoll;
+    private bool _gameEnded = false;
 
     private void Awake()
     {
@@ -43,8 +51,12 @@ public class CameraController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        // ball in the air
-        if (_elapsed < _duration) ComputeCameraMove();
+        if (_elapsed < _duration)
+        {
+            if (_gameEnded)
+                ComputePodiumCameraMove(); // take camera to players' podium
+            else ComputeCameraMove(); // ball in the air
+        }
     }
 
     void ComputeCameraMove()
@@ -68,6 +80,25 @@ public class CameraController : MonoBehaviour
         transform.position = Vector3.Lerp(transform.position, targetPos, Time.deltaTime * _smoothSpeed);
     }
 
+    void ComputePodiumCameraMove()
+    {
+        _elapsed += Time.deltaTime;
+        float t = Mathf.Clamp01(_elapsed / _duration);
+
+        // ---- STRAIGHT LINE POSITION ----
+        transform.position = Vector3.Lerp(_startPos, _endPos, t);
+
+        // ---- ROTATION (Y ONLY, SHORTEST PATH) ----
+        float deltaYaw = Mathf.DeltaAngle(_startYaw, _endYaw);
+        float currentYaw = _startYaw + deltaYaw * t;
+
+        transform.rotation = Quaternion.Euler(
+            _startPitch,
+            currentYaw,
+            _startRoll
+        );
+    }
+
     public void StartMoving()
     {
         SetupCameraMove();
@@ -84,9 +115,30 @@ public class CameraController : MonoBehaviour
 
     public void ResetCamera()
     {
+        // Prevent it when game ends
+        if (GameManager.Instance.State == GameManager.GameState.GameOver) return;
+
         transform.position = _startPos;
         Vector3 direction = _endPos - _startPos;
         direction.y = 0;
         transform.rotation = Quaternion.LookRotation(direction);
+    }
+
+    public void SetPodiumCamera(Transform podiumTransform)
+    {
+        _cameraEnd = podiumTransform;
+
+        _startPos = transform.position;
+        _endPos = _cameraEnd.position;
+
+        _startYaw = transform.eulerAngles.y;
+        _endYaw = _cameraEnd.eulerAngles.y;
+
+        _startPitch = transform.eulerAngles.x;
+        _startRoll = transform.eulerAngles.z;
+
+        _duration = 1.5f;
+        _elapsed = 0f;
+        _gameEnded = true;
     }
 }

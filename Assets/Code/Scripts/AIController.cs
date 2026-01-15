@@ -8,7 +8,7 @@ public class AIController : MonoBehaviour
     [SerializeField] private bool hasBall;
     public BallController BallInstance;
     private Animator _animator;
-    private Transform _hand;
+    public Transform OpponentHand;
 
     private void Awake()
     {
@@ -38,11 +38,9 @@ public class AIController : MonoBehaviour
         {
             float shootingSpeed = UnityEngine.Random.Range(5f, 90f);
             _animator.SetBool("shoot", true);
-            BallInstance.PrepareShot(_hand);
+            BallInstance.PrepareShot(OpponentHand);
             yield return new WaitForSeconds(0.7f);
             BallInstance.Shoot(shootingSpeed);
-            yield return new WaitForSeconds(1f);
-            _animator.SetBool("shoot", false);
         }
     }
 
@@ -55,10 +53,16 @@ public class AIController : MonoBehaviour
     {
         _animator = GetComponent<Animator>();
 
-        _hand = _animator.GetBoneTransform(HumanBodyBones.RightHand);
-
-        if (_hand == null)
+        // Empty related to the hand where to place the ball when shooting it
+        OpponentHand = _animator.GetBoneTransform(HumanBodyBones.RightHand).GetChild(5);
+        
+        if (OpponentHand == null)
             Debug.LogError("RightHand bone not found!");
-        else Debug.Log(_hand.name); // should print "mixamorig:RightHand"
     }
+
+    public void GameOver() => _animator.SetBool("game_ended", true);
+
+    public void Victory(bool victory) => _animator.SetTrigger(victory ? "victory" : "defeat");
+
+    public void Drible() => _animator.SetBool("shoot", false);
 }
