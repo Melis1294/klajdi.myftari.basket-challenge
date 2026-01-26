@@ -9764,5 +9764,15 @@ MonoBehaviour:
   minBackboardSpeed: 70
   maxBackboardSpeed: 75
   AIBall: 0
+  Opponent: {fileID: 0}
   bounce: {fileID: 8300000, guid: f4232bbf4b6c7f548ae5d7d20e6e4914, type: 3}
   hoop: {fileID: 8300000, guid: 7cdd5bb30cd832d428cd74a513a4e8b0, type: 3}
+  woosh: {fileID: 8300000, guid: fa25d3c681fa53148bd1a8a2946f967b, type: 3}
+  rim: {fileID: 8300000, guid: 5a97dd6be809a834fa3520928e101d9a, type: 3}
+  backboard: {fileID: 8300000, guid: 54a3f717f7d7ec8458fcd5948f1341d7, type: 3}
+  dribble: {fileID: 8300000, guid: 10fd63c8ed6632f4ab4a447a36afa665, type: 3}
+  power: 10
+  dribbleHeight: 0.6
+  dribbleSpeed: 6
+  cameraShakeDuration: 0.25
+  cameraShakeMagintude: 0.032

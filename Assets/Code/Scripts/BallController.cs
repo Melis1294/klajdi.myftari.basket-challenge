@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
@@ -10,6 +10,8 @@ public class BallController : MonoBehaviour
     private bool _hoopEntered;
     private bool _rimWasTouched;
     private bool _backboardWasTouched;
+    private bool _groundWasTouched;
+    private bool _isFlying;
     private string _hoopTag = "Hoop";
     private string _rimTag = "Rim";
     private string _backboardTag = "Backboard";
@@ -22,6 +24,7 @@ public class BallController : MonoBehaviour
     private Vector3 _startPos;
     private Vector3 _endPos;
     private Rigidbody _ballRb;
+    private Transform _playerHand;
 
     [SerializeField] float minHoopSpeed = 40;
     [SerializeField] float maxHoopSpeed = 50;
@@ -29,35 +32,98 @@ public class BallController : MonoBehaviour
     [SerializeField] float maxBackboardSpeed = 75;
     private float _diversion = 0;
     private float _shootingSpeed;
-    private GameObject _fireTrails;
+    private GameObject _fireTrails; // Particle System for the fireball
 
     // Event to notify AI that he has the ball again
     public bool AIBall;
     private Collider _ballCollider;
+    public AIController Opponent;
 
     // Audio
-    private AudioSource _sfxManager;
     [SerializeField] private AudioClip bounce;
     [SerializeField] private AudioClip hoop;
+    [SerializeField] private AudioClip woosh;
+    [SerializeField] private AudioClip rim;
+    [SerializeField] private AudioClip backboard;
+    [SerializeField] private AudioClip dribble;
+
+    // PhysicsMethods
+    public float power = 10.0f;
+
+    // Dribble
+    [SerializeField] private float dribbleHeight = 0.8f;
+    [SerializeField] private float dribbleSpeed = 5f;
+    private float _prevYOffset;
+    private bool _goingDown;
+    private float _dribbleTime;
+
+    // Camera shake
+    [SerializeField] private float cameraShakeDuration = .3f;
+    [SerializeField] private float cameraShakeMagintude = .45f;
+
+    // Events
+    public event Action LastBallShot;
+
+    private enum BallState
+    {
+        Dribbling,
+        Held,
+        Shooting,
+        GameOver
+    }
+
+    private BallState _state;
+
+
+    enum ShotType
+    {
+        Backboard,
+        Rim,
+        Hoop
+    }
 
     private void Awake()
     {
         _ballRb = GetComponent<Rigidbody>();
         _ballCollider = GetComponent<Collider>();
+
+        // Subscribe method to state change events
+        GameManager.OnGameStateChanged += EndGame;
     }
 
-    // Update is called once per frame
+    private void OnDestroy()
+    {
+        // Subscribe method to state change events
+        GameManager.OnGameStateChanged -= EndGame;
+    }
+
+    private void LateUpdate()
+    {
+        if (_state == BallState.Held) transform.position = _playerHand.position;
+    }
+
     void FixedUpdate()
     {
-        // ball in the air
-        if (_elapsed < _duration) ComputeFlight();
-        if (!AIBall) _fireTrails.SetActive(FireballController.Instance.FireballMultiplier == 2);
+        if (_state == BallState.Shooting)
+        {
+            if (_elapsed < _duration)
+                ComputeFlight();
+            return;
+        } else 
+        if (_state == BallState.Dribbling)
+        {
+            Dribble();
+        }
+
+        if (!AIBall)
+            _fireTrails.SetActive(FireballController.Instance.FireballMultiplier == 2);
     }
 
     private void Start()
     {
         if (!AIBall) _fireTrails = transform.GetChild(0).gameObject;
-        _sfxManager = GameManager.Instance.SFXManager;
+        //PhysicsMethods
+        //Predict();
     }
 
     void ComputeFlight()
@@ -97,6 +163,7 @@ public class BallController : MonoBehaviour
         if (_elapsed >= _duration)
         {
             // Update physics according to if player is aiming for the hoop or for the backboard
+            _ballRb.isKinematic = false;
             _ballRb.velocity = (_shootingSpeed >= minBackboardSpeed) ? (Vector3.forward * _fallSpeed * 0.2f) : (Vector3.down * _fallSpeed);
             _ballRb.useGravity = true; // Hand control back to physics
         }
@@ -139,9 +206,33 @@ public class BallController : MonoBehaviour
 
     public void Shoot(float shootingSpeed)
     {
+        _isFlying = true; // To check on endgame
+        _state = BallState.Shooting;
+        transform.SetParent(null);
+        transform.localScale = Vector3.one;
+        _startPos = transform.position;
+        GameManager.Instance.SFXManager.PlayOneShot(woosh);
+
+        _ballRb.isKinematic = true; // still script-driven
+
         _shootingSpeed = shootingSpeed;
         UpdateTarget(shootingSpeed);
-        _elapsed = 0;
+        _elapsed = 0f;
+        _ballCollider.enabled = true;
+    }
+
+    // Called before the shot, when the caracter is animating the shot
+    public void PrepareShot(Transform hand)
+    {
+        _state = BallState.Held;
+        _playerHand = hand;
+
+        _ballRb.velocity = Vector3.zero;
+        _ballRb.angularVelocity = Vector3.zero;
+        _ballRb.isKinematic = true;
+
+        transform.SetParent(hand);
+        transform.position = hand.position;
     }
 
     private void SetupBallShoot()
@@ -156,19 +247,64 @@ public class BallController : MonoBehaviour
 
     public void ResetState()
     {
+        _ballCollider.enabled = false;
         SetupBallShoot();
-        
+
         // Reset ball position w.r.t. player, and physics
         transform.position = _startPos;
-        transform.LookAt(GameManager.Instance.HoopBasket.transform);
+        //transform.LookAt(GameManager.Instance.HoopBasket.transform);
         ResetPhysics();
+        StartDribble();
 
         // Notify AI that he owns the ball again
-        AIController aiParent = transform.GetComponentInParent<AIController>();
-        if (aiParent) aiParent.HasBall();
+        if (AIBall) Opponent.HasBall();
+
+        if (GameManager.Instance.State == GameManager.GameState.GameOver && _groundWasTouched == true)
+        {
+            LastBallShot?.Invoke();
+            return;
+        }
+
+        _groundWasTouched = false;
     }
 
-    void ResetPhysics()
+    private void StartDribble()
+    {
+        _state = BallState.Dribbling;
+
+        _dribbleTime = 0f;
+        _prevYOffset = 0f;
+        _goingDown = true;
+
+        _ballRb.isKinematic = true;
+    }
+
+    public void StopDribble()
+    {
+        _dribbleTime = 0f;
+
+        transform.localScale = Vector3.one;
+    }
+
+    private void Dribble()
+    {
+        _dribbleTime += Time.deltaTime * dribbleSpeed;
+
+        float yOffset = Mathf.Abs(Mathf.Sin(_dribbleTime)) * dribbleHeight;
+        transform.position = BallStart.position - new Vector3(0, yOffset, 0);
+        bool nowGoingDown = _prevYOffset > yOffset;
+
+        if (_goingDown && !nowGoingDown)
+            GameManager.Instance.SFXManager.PlayOneShot(dribble);
+
+        //float scaleSize = yOffset + 0.4f - ((1 + Mathf.Abs(Mathf.Sin(_dribbleTime))) * 1.1f);
+        //transform.localScale = new Vector3(scaleSize, 1f, scaleSize);
+
+        _goingDown = nowGoingDown;
+        _prevYOffset = yOffset;
+    }
+
+    public void ResetPhysics()
     {
         _ballRb.useGravity = false;
         _ballRb.velocity = Vector3.zero;
@@ -178,12 +314,18 @@ public class BallController : MonoBehaviour
     // Manage collisions with ground, rim and backboard
     private void OnCollisionEnter(Collision collision)
     {
-        _sfxManager.PlayOneShot(bounce);
+        GameManager.Instance.SFXManager.PlayOneShot(bounce);
 
         if (collision.collider.GetComponent<BallController>())
         {
             Physics.IgnoreCollision(collision.collider, _ballCollider);
             return;
+        } else
+        {
+            if (AIBall)
+            {
+                Opponent.Drible();
+            }
         }
 
         if (collision.collider.CompareTag(_groundTag))
@@ -192,8 +334,13 @@ public class BallController : MonoBehaviour
             if (_hoopEntered)
                 GameManager.Instance.ResetGameState(AIBall);
             else
-                GameManager.Instance.Lose(AIBall);  // To manage fireball counter
+                GameManager.Instance.Lose(AIBall);  // To manage fireball shut off
+
+            _isFlying = false; // To check on endgame
+            _groundWasTouched = true;
+
             ResetState();
+
             return;
         }
 
@@ -201,19 +348,21 @@ public class BallController : MonoBehaviour
         if (collision.collider.CompareTag(_backboardTag) && !_backboardWasTouched && !_rimWasTouched)
         {
             _backboardWasTouched = true;
+            GameManager.Instance.SFXManager.PlayOneShot(backboard);
+            StartCoroutine(GameManager.Instance.SpawnShotParticles(transform.position, (int)ShotType.Backboard));
             return;
         }
 
         if (!collision.collider.transform.parent.CompareTag(_rimTag) || _rimWasTouched) return;
         _rimWasTouched = true;
+
+        GameManager.Instance.SFXManager.PlayOneShot(rim);
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        _sfxManager.PlayOneShot(hoop);
-
         if (!other.CompareTag(_hoopTag) || _hoopEntered) return;
-        
+
         // Manage score cases if shot was scored
         int points = 3;
         if (_backboardWasTouched)
@@ -222,8 +371,37 @@ public class BallController : MonoBehaviour
             BackboardController.Instance.ResetValue(); // Reset backboard bonus after scoring
         }
         else if (_rimWasTouched) points = 2;
+        else if (!_rimWasTouched && CameraController.Instance && !AIBall) StartCoroutine(CameraController.Instance.Shake(cameraShakeDuration, cameraShakeMagintude));
 
         _hoopEntered = true;
+        GameManager.Instance.SFXManager.PlayOneShot(hoop);
+        // Show different effects for 2 points or 3 points shot
+        StartCoroutine(GameManager.Instance.SpawnShotParticles(transform.position, _rimWasTouched ? (int)ShotType.Rim : (int)ShotType.Hoop));
         GameManager.Instance.Win(points, AIBall);
+    }
+
+    //PhysicsMethods
+    public Vector3 CalculateForce()
+    {
+        return transform.forward * power;
+    }
+
+    public void GameOver()
+    {
+        // Put balls away from map if game is over
+        if (GameManager.Instance.State == GameManager.GameState.GameOver)
+        {
+            transform.position = Vector3.one * -5;
+            _state = BallState.GameOver;
+            return;
+        }
+    }
+
+    public void EndGame(GameManager.GameState state)
+    {
+        if (state == GameManager.GameState.GameOver && !_isFlying)
+        {
+            LastBallShot?.Invoke();
+        }
     }
 }

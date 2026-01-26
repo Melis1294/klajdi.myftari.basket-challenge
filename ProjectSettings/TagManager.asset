@@ -8,6 +8,7 @@ TagManager:
   - Rim
   - Backboard
   - Hoop
+  - BallPos
   layers:
   - Default
   - TransparentFX
