@@ -34,7 +34,7 @@ public class AIController : MonoBehaviour
         float shotCountdown = UnityEngine.Random.Range(1f, 3f);
         yield return new WaitForSeconds(shotCountdown);
         // Check if game is still on playing
-        if (GameManager.Instance.State == GameManager.GameState.Play)
+        if (GameManager.Instance.State == GameManager.GameState.Play && BallInstance)
         {
             float shootingSpeed = UnityEngine.Random.Range(5f, 90f);
             _animator.SetBool("shoot", true);

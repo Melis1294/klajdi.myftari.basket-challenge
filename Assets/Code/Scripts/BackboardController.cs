@@ -29,6 +29,9 @@ public class BackboardController : MonoBehaviour
             Instance = this;
         }
         bonusText.enabled = isUpgraded;
+
+        // Subscribe method to state change events
+        GameManager.OnGameStateChanged += ManageTextVisibility;
     }
 
     void Start()
@@ -39,8 +42,16 @@ public class BackboardController : MonoBehaviour
         nextUpgradeTime = Random.Range(totalTime * (5f / 60f), totalTime * (10f / 60f));
     }
 
+    private void OnDestroy()
+    {
+        // Subscribe method to state change events
+        GameManager.OnGameStateChanged -= ManageTextVisibility;
+    }
+
     void Update()
     {
+        if (GameManager.Instance.State != GameManager.GameState.Play) return;
+
         float time = Time.timeSinceLevelLoad;
 
         // Trigger upgrade
@@ -86,5 +97,10 @@ public class BackboardController : MonoBehaviour
     public int GetValue()
     {
         return currentValue;
+    }
+
+    public void ManageTextVisibility(GameManager.GameState state)
+    {
+        if (state == GameManager.GameState.GameOver) ResetValue();
     }
 }

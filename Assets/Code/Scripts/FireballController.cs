@@ -20,7 +20,7 @@ public class FireballController : MonoBehaviour
     // UI
     private Slider _slider;
     private Image _sliderFill;
-    private Color _normalColor = new Color(150f / 255f, 150f / 255f, 150f / 255f);
+    private Color _normalColor = new Color(200f / 255f, 200f / 255f, 200f / 255f);
     private Color _bonusColor = new Color(255f / 255f, 140f / 255f, 110f / 255f);
 
     // Audio

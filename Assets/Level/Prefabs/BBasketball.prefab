@@ -7,6 +7,14 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 3627806365503173476, guid: 9456647ba6a2e1a4bbaf949868ac188f, type: 3}
+      propertyPath: cameraShakeDuration
+      value: 0.25
+      objectReference: {fileID: 0}
+    - target: {fileID: 3627806365503173476, guid: 9456647ba6a2e1a4bbaf949868ac188f, type: 3}
+      propertyPath: cameraShakeMagintude
+      value: 0.032
+      objectReference: {fileID: 0}
     - target: {fileID: 5345065345540344647, guid: 9456647ba6a2e1a4bbaf949868ac188f, type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 

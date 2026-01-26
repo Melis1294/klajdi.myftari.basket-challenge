@@ -8,7 +8,8 @@ public class InputManager : MonoBehaviour
     [SerializeField] private float minStrength = 5f;
     [SerializeField] private float initialTime = 5.7f; // Define countdown params
     private float _strength;           // Define strength params
-    private bool _shotEnded;           // Define shot params
+    private float _touchStregth;
+    public bool IsShooting;           // Define shot params - if "true" prevents shooting until new shot
     private float _remainingTime;
     #region Mouse Input
     [SerializeField] private float mosueSpeedMultiply = 2.3f;
@@ -40,6 +41,9 @@ public class InputManager : MonoBehaviour
         GameManager.OnGameStateChanged += GameManagerOnGameStateChanged;
 
         slider.value = 0;
+#if UNITY_IOS || UNITY_ANDROID                      // Touch controls
+        _touchStregth = 0;
+#endif
     }
 
     // Start is called before the first frame update
@@ -51,7 +55,7 @@ public class InputManager : MonoBehaviour
 
     void Update()
     {
-        if (_shotEnded) return;
+        if (IsShooting) return;
 
 #if UNITY_IOS || UNITY_ANDROID                      // Touch controls
         if (Input.touchCount > 0)
@@ -86,7 +90,6 @@ public class InputManager : MonoBehaviour
     float ManageTouchInput()
     {
         Touch touch = Input.GetTouch(0);
-        float totalStrength = 0;
 
         switch (touch.phase)
         {
@@ -99,7 +102,7 @@ public class InputManager : MonoBehaviour
                 if (_isSwiping)
                 {
                     float deltaY = (touch.position.y - _startTouchPos.y) * touchSpeedMultiply;
-                    totalStrength = ComputeStrength(deltaY);
+                    _touchStregth = ComputeStrength(deltaY);
                 }
                 break;
 
@@ -107,12 +110,12 @@ public class InputManager : MonoBehaviour
             case TouchPhase.Canceled:
                 _endTouchPos = touch.position;
                 float totalDeltaY = (_endTouchPos.y - _startTouchPos.y) * touchSpeedMultiply;
-                totalStrength = ComputeStrength(totalDeltaY);
+                _touchStregth = ComputeStrength(totalDeltaY);
                 _isSwiping = false;
                 break;
         }
 
-        return totalStrength;
+        return _touchStregth;
     }
 
     float ManageMouseInput()
@@ -138,8 +141,11 @@ public class InputManager : MonoBehaviour
     public void RestartShot()
     {
         _remainingTime = initialTime;
+#if UNITY_IOS || UNITY_ANDROID                      // Touch controls
+        _touchStregth = 0;
+#endif
         UpdateShotUI();
-        _shotEnded = false;
+        IsShooting = false;
     }
 
     void CountDown()
@@ -157,7 +163,7 @@ public class InputManager : MonoBehaviour
     // Set input disabled after shooting until next shot
     void ResetParams()
     {
-        _shotEnded = true;
+        IsShooting = true;
         _strength = 0;
         _remainingTime = 0;
     }

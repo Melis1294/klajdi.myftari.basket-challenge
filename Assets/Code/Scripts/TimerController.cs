@@ -19,6 +19,7 @@ public class TimerController : MonoBehaviour
     [SerializeField] private TextMeshProUGUI gameTimerText;
     [SerializeField] private TextMeshProUGUI startupTimerText;
     [SerializeField] private GameObject gameOverScreen;
+    [SerializeField] private TextMeshProUGUI retryButtonText;
     private TextMeshProUGUI _totalScoreUI;
 
     // Audio
@@ -117,7 +118,7 @@ public class TimerController : MonoBehaviour
     IEnumerator SetupGameOver()
     {
         // Wait on computing the scores until last ball shots are over
-        yield return new WaitUntil(() => GameManager.Instance.LastBallsAreShot());
+        yield return new WaitUntil(() => GameManager.Instance.LastBallsAreShot() && !InputManager.Instance.IsShooting);
 
         int playerScore = GameManager.Instance.TotalScore;
         int opponentScore = GameManager.Instance.OpponentScore;
@@ -150,10 +151,11 @@ public class TimerController : MonoBehaviour
     // Setup Game Over UI
     IEnumerator ShowScore(bool playerWins, bool isSinglePlayer, int playerScore, int opponentScore)
     {
-        yield return new WaitForSeconds(_timeBetweenGameEndEvents);
+        yield return new WaitForSeconds(_timeBetweenGameEndEvents * 4);
         string victoryText = isSinglePlayer ? "" : playerWins ? "You win!\n" : "You lose!\n";
         string scoreRecapText = isSinglePlayer ? playerScore.ToString() : string.Format("{0} - {1}", playerScore, opponentScore);
         _totalScoreUI.text = string.Format("{0}Total Score\n{1}", victoryText, scoreRecapText);
+        if (!playerWins) retryButtonText.text = "Retry";
         BackboardController.Instance.ResetValue();
         BackboardController.Instance.enabled = false;
         gameTimerText.transform.parent.gameObject.SetActive(false);
@@ -166,7 +168,7 @@ public class TimerController : MonoBehaviour
 
     IEnumerator EvenPoints()
     {
-        _totalScoreUI.text = string.Format("The score is even\nRetry for {0} seconds", 10f);
+        _totalScoreUI.text = string.Format("The score is even\nRetry for\n{0} seconds", 10f);
         gameOverScreen.SetActive(true);
         gameOverScreen.transform.GetChild(1).gameObject.SetActive(false);   // Turn off replay button
         yield return new WaitForSeconds(3f);

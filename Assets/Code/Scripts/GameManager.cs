@@ -3,7 +3,6 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -53,19 +52,23 @@ public class GameManager : MonoBehaviour
 
     public static GameManager Instance { get; private set; }
 
+    public static bool GameIsOver() => Instance != null && Instance.State == GameState.GameOver;
+
     Animator characterAnimator;
 
-    // PhysicsMethod
-    Scene currentScene;
-    Scene predictionScene;
-
-    PhysicsScene currentPhysicsScene;
-    PhysicsScene predictionPhysicsScene;
-    LineRenderer lineRenderer;
-    public GameObject dummy;
-    public int maxIterations;
-
     private int _lastBallsShotCounter;
+
+    // --- Decoupling: assign these adapter components in Inspector ---
+    [Header("Service Adapters (assign adapter components)")]
+    [SerializeField] private InputManagerAdapter inputServiceBehaviour;
+    [SerializeField] private CameraControllerAdapter cameraServiceBehaviour;
+    [SerializeField] private FireballControllerAdapter fireballServiceBehaviour;
+    [SerializeField] private SceneControllerAdapter sceneServiceBehaviour;
+
+    private IInputService InputService => inputServiceBehaviour as IInputService;
+    private ICameraService CameraService => cameraServiceBehaviour as ICameraService;
+    private IFireballService FireballService => fireballServiceBehaviour as IFireballService;
+    private ISceneService SceneService => sceneServiceBehaviour as ISceneService;
 
     private void Awake()
     {
@@ -75,36 +78,30 @@ public class GameManager : MonoBehaviour
             Destroy(this);
             return;
         }
-        else
-        {
-            Instance = this;
-        }
+        Instance = this;
+        
         UpdateGameState(GameState.Startup);
 
         SetupZones();
 
-        // Setup Buttons
-        endGameButton.onClick.AddListener(() => SceneController.Instance.BackToMainMenu());
-        retryButton.onClick.AddListener(() => SceneController.Instance.StartGame());
-        menuButton.onClick.AddListener(() => SceneController.Instance.BackToMainMenu());
+        // Check if services are null
+        if (InputService == null) throw new NullReferenceException("InputService not found!");
+        if (CameraService == null) throw new NullReferenceException("CameraService not found!");
+        if (FireballService == null) throw new NullReferenceException("FireballService not found!");
+        if (SceneService == null) throw new NullReferenceException("SceneService not found!!!");
 
-        _lastBallsShotCounter = 0; // To know if players shot last balls on timer end
-
-        // PhysicsMethod
-        currentScene = SceneManager.GetActiveScene();
-        currentPhysicsScene = currentScene.GetPhysicsScene();
-
-        CreateSceneParameters parameters = new CreateSceneParameters(LocalPhysicsMode.Physics3D);
-        predictionScene = SceneManager.CreateScene("Prediction", parameters);
-        predictionPhysicsScene = predictionScene.GetPhysicsScene();
-
-        lineRenderer = GetComponent<LineRenderer>();
+        endGameButton.onClick.AddListener(() => SceneService.BackToMainMenu());
+        retryButton.onClick.AddListener(() => SceneService.StartGame());
+        menuButton.onClick.AddListener(() => SceneService.BackToMainMenu());
+        
+        // To know if players shot last balls on timer end
+        _lastBallsShotCounter = 0;
     }
 
     private void OnDestroy()
     {
-        _ballInstance.LastBallShot -= LastBallsShot;
-        _opponentBallInstance.LastBallShot -= LastBallsShot;
+        if (_ballInstance != null) _ballInstance.LastBallShot -= LastBallsShot;
+        if (_opponentBallInstance != null) _opponentBallInstance.LastBallShot -= LastBallsShot;
     }
 
     private void SetupZones()
@@ -132,54 +129,15 @@ public class GameManager : MonoBehaviour
     {
         if (shotType > (shotParticles.Length - 1)) throw new ArgumentOutOfRangeException("Particle out of list!");
 
-        Debug.Log("Shot type: " + shotType);
-        if (shotType == 1) Debug.Log("Shot type: RIM");
-
         GameObject shotParticle = Instantiate(shotParticles[shotType], shotPos, Quaternion.identity);
         yield return new WaitForSeconds(3);
         Destroy(shotParticle);
     }
 
-    // PhysicsMethod
-    //private void FixedUpdate()
-    //{
-    //    if (currentPhysicsScene.IsValid())
-    //    {
-    //        currentPhysicsScene.Simulate(Time.fixedDeltaTime);
-    //    }
-    //}
-
-    //PhysicsMethod
-    public void predict(GameObject subject, Vector3 currentPosition, Vector3 force)
-    {
-        if (currentPhysicsScene.IsValid() && predictionPhysicsScene.IsValid())
-        {
-            if (dummy == null)
-            {
-                dummy = Instantiate(subject);
-                SceneManager.MoveGameObjectToScene(dummy, predictionScene);
-            }
-
-            dummy.transform.position = currentPosition;
-            dummy.GetComponent<Rigidbody>().AddForce(force, ForceMode.Impulse);
-            lineRenderer.positionCount = 0;
-            lineRenderer.positionCount = maxIterations;
-
-
-            for (int i = 0; i < maxIterations; i++)
-            {
-                predictionPhysicsScene.Simulate(Time.fixedDeltaTime);
-                lineRenderer.SetPosition(i, dummy.transform.position);
-            }
-
-            Destroy(dummy);
-        }
-    }
-
     private void Start()
     {
         SpawnCharacter();
-        int[] totalScores = SceneController.Instance.GetScores();
+        int[] totalScores = SceneService != null ? SceneService.GetScores() : new int[] { 0, 0 };
         TotalScore = totalScores[0];
         totalScoreText.text = string.Format("Score: {0}", TotalScore);
         if (!IsSinglePlayer) {
@@ -196,14 +154,14 @@ public class GameManager : MonoBehaviour
         _characterInstance = Instantiate(mainCharacter, _shootingZones[currentPositionPlayer].position, Quaternion.Euler(0, 180f, 0));
         if (_characterInstance)
         {
-            CameraController.Instance.SetupPlayerCamera(_characterInstance.GetChild(1).transform);
+            CameraService?.SetupPlayerCamera(_characterInstance.GetChild(1).transform, CameraTarget);
             characterAnimator = _characterInstance.GetComponentInChildren<Animator>();
             _characterHand = characterAnimator.GetBoneTransform(HumanBodyBones.RightHand).GetChild(5);
 
             _ballInstance = Instantiate(balls[0], _characterHand.position, Quaternion.identity).GetComponent<BallController>();
             _ballInstance.BallStart = _characterHand;
             _ballInstance.ResetState();
-            // Subscribe to last ball shot event
+            // Subscribe ball controller to last ball shot event
             _ballInstance.LastBallShot += LastBallsShot;
         }
         else
@@ -218,9 +176,7 @@ public class GameManager : MonoBehaviour
         _opponentInstance = Instantiate(opponentCharacter, _shootingZones[currentPositionOpponent].position + opponentPositionOffset, Quaternion.Euler(0, 180f, 0));
         if (_opponentInstance)
         {
-            Transform ballStart = _opponentInstance.transform.GetChild(0).transform;
             _opponentBallInstance = Instantiate(balls[1], _opponentInstance.GetComponent<AIController>().OpponentHand.position, Quaternion.identity).GetComponent<BallController>();
-
             // Subscribe to last ball shot event
             _opponentBallInstance.LastBallShot += LastBallsShot;
 
@@ -243,7 +199,7 @@ public class GameManager : MonoBehaviour
 
     public bool LastBallsAreShot()
     {
-        return _lastBallsShotCounter == 2;
+        return _lastBallsShotCounter >= 2;
     }
 
     // Called on first shot setup and in next ones, from both player and opponent
@@ -260,6 +216,8 @@ public class GameManager : MonoBehaviour
     // Compute shot based on input strength
     public void OnBallShot(float shootingSpeed)
     {
+        if (!_ballInstance) return;
+
         characterAnimator.SetBool("shoot", true);
         _ballInstance.PrepareShot(_characterHand);
         StartCoroutine(ShootBall(shootingSpeed));
@@ -268,8 +226,11 @@ public class GameManager : MonoBehaviour
     private IEnumerator ShootBall(float shootingSpeed)
     {
         yield return new WaitForSeconds(0.7f);
+
+        if (!_ballInstance) yield return null;
+
         _ballInstance.Shoot(shootingSpeed);
-        CameraController.Instance.StartMoving();
+        CameraService?.StartMoving();
     }
 
     // Reset game stats for next shot, for AI or player
@@ -280,8 +241,8 @@ public class GameManager : MonoBehaviour
             scoreText.gameObject.SetActive(false);
             UpdatePosition(ref currentPositionPlayer, _characterInstance, Vector3.zero);
             // Reset camera position for next shot
-            CameraController.Instance.SetupPlayerCamera(_characterInstance.GetChild(1).transform);
-            InputManager.Instance.RestartShot();
+            CameraService?.SetupPlayerCamera(_characterInstance.GetChild(1).transform, CameraTarget);
+            InputService?.RestartShot();
             characterAnimator.SetBool("shoot", false);
         } else
         {
@@ -299,7 +260,8 @@ public class GameManager : MonoBehaviour
             currentPositionOpponent++;  // Update opponent position for next shot
         } else
         {
-            points *= FireballController.Instance.FireballMultiplier;
+            int multiplier = FireballService != null ? FireballService.FireballMultiplier : 1;
+            points *= multiplier;
             scoreText.text = string.Format("+{0} points!", points);  // Show single score UI (only player)
             scoreText.gameObject.SetActive(true);
             TotalScore += points;
@@ -307,14 +269,14 @@ public class GameManager : MonoBehaviour
             currentPositionPlayer++; // Update player position for next shot
 
             // Manage fireOn mode
-            FireballController.Instance.AddScore((float)points / 8);
+            FireballService?.AddScore((float)points / 8);
         }
     }
 
     public void Lose(bool aiLost)
     {
         if (aiLost) return;
-        FireballController.Instance.OnMissedShot();   // Set Fireball counter to zero if 1 shot missed
+        FireballService?.OnMissedShot();   // Set Fireball counter to zero if 1 shot missed
         ResetGameState();   // Reset player state for next shot
     }
 
@@ -324,10 +286,12 @@ public class GameManager : MonoBehaviour
         if (evenPoints) return;
 
         characterAnimator.SetBool("game_ended", true);
-        _opponentInstance.GetComponent<AIController>().GameOver();
+        _opponentInstance.GetComponent<AIController>()?.GameOver();
 
-        _ballInstance.GameOver();
-        _opponentBallInstance.GameOver();
+        //_ballInstance.GameOver();
+        //_opponentBallInstance.GameOver();
+        Destroy(_ballInstance != null ? _ballInstance.gameObject : null);
+        Destroy(_opponentBallInstance != null ? _opponentBallInstance.gameObject : null);
     }
 
     public void Victory(bool mainCharWins)
@@ -335,7 +299,7 @@ public class GameManager : MonoBehaviour
         MoveCharactersToPodiums(mainCharWins);
         characterAnimator.SetTrigger(mainCharWins ? "victory" : "defeat");
         // Opposite of main player
-        _opponentInstance.GetComponent<AIController>().Victory(!mainCharWins);
+        _opponentInstance.GetComponent<AIController>()?.Victory(!mainCharWins);
     }
 
     private void MoveCharactersToPodiums(bool playerWon)
@@ -345,7 +309,7 @@ public class GameManager : MonoBehaviour
         _characterInstance.SetParent(_endGameZones[(int)mainCharZone]);
         _opponentInstance.SetParent(_endGameZones[(int)opponentZone]);
         ResetCharactersPositions();
-        CameraController.Instance.SetPodiumCamera(_endGameZones[(int)EndGameZone.CameraZone]);
+        CameraService?.SetPodiumCamera(_endGameZones[(int)EndGameZone.CameraZone]);
     }
 
     // Reset characters positions when they are in the podium so they rotate towards the camera
@@ -361,22 +325,12 @@ public class GameManager : MonoBehaviour
     // Manage game states
     public void UpdateGameState(GameState newState)
     {
-        switch (newState)
-        {
-            case GameState.Startup:
-                break;
-            case GameState.Play:
-                break;
-            case GameState.Pause:
-                break;
-            case GameState.GameOver:
-                break;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(newState), newState, null);
-        }
-
         State = newState;
-        InputManager.Instance.enabled = State == GameState.Play;
+        if (InputService != null)
+            InputService.Enabled = State == GameState.Play;
+        else
+            InputManager.Instance.enabled = State == GameState.Play; // fallback to existing singleton if adapter not assigned
+
         OnGameStateChanged?.Invoke(newState);
     }
 

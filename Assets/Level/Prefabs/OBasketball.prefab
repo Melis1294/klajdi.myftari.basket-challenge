@@ -120,3 +120,5 @@ MonoBehaviour:
   power: 10
   dribbleHeight: 0.55
   dribbleSpeed: 6
+  cameraShakeDuration: 0.25
+  cameraShakeMagintude: 0.032

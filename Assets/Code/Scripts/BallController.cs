@@ -55,9 +55,13 @@ public class BallController : MonoBehaviour
     [SerializeField] private float dribbleSpeed = 5f;
     private float _prevYOffset;
     private bool _goingDown;
-
     private float _dribbleTime;
 
+    // Camera shake
+    [SerializeField] private float cameraShakeDuration = .3f;
+    [SerializeField] private float cameraShakeMagintude = .45f;
+
+    // Events
     public event Action LastBallShot;
 
     private enum BallState
@@ -351,7 +355,6 @@ public class BallController : MonoBehaviour
 
         if (!collision.collider.transform.parent.CompareTag(_rimTag) || _rimWasTouched) return;
         _rimWasTouched = true;
-        Debug.Log("Rim touched");
 
         GameManager.Instance.SFXManager.PlayOneShot(rim);
     }
@@ -368,6 +371,7 @@ public class BallController : MonoBehaviour
             BackboardController.Instance.ResetValue(); // Reset backboard bonus after scoring
         }
         else if (_rimWasTouched) points = 2;
+        else if (!_rimWasTouched && CameraController.Instance && !AIBall) StartCoroutine(CameraController.Instance.Shake(cameraShakeDuration, cameraShakeMagintude));
 
         _hoopEntered = true;
         GameManager.Instance.SFXManager.PlayOneShot(hoop);
@@ -380,11 +384,6 @@ public class BallController : MonoBehaviour
     public Vector3 CalculateForce()
     {
         return transform.forward * power;
-    }
-
-    private void Predict()
-    {
-        GameManager.Instance.predict(gameObject, transform.position, CalculateForce());
     }
 
     public void GameOver()
