@@ -4,6 +4,10 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
+//TODO: Fix camera position after shot
+//TODO: Fix balls collision between each other
+//TODO: Fix ball collision outside map (respawn) -> Consider using Layers
+
 public class GameManager : MonoBehaviour
 {
     public Transform HoopBasket;
@@ -37,8 +41,8 @@ public class GameManager : MonoBehaviour
 
     // Game mode
     public bool IsSinglePlayer;
-    [SerializeField] Vector3 opponentPositionOffset = new Vector3(-0.69f, 0, 0.27f);
-    [SerializeField] int currentPositionOpponent = 0;
+    public Vector3 OpponentPositionOffset = new Vector3(-0.69f, 0, 0.27f);
+    public int CurrentPositionOpponent = 0;
     [SerializeField] private TextMeshProUGUI opponentScoreText;
     public int OpponentScore { get; private set; }
     private Transform _opponentInstance;
@@ -90,7 +94,7 @@ public class GameManager : MonoBehaviour
         if (FireballService == null) throw new NullReferenceException("FireballService not found!");
         if (SceneService == null) throw new NullReferenceException("SceneService not found!!!");
 
-        endGameButton.onClick.AddListener(() => SceneService.BackToMainMenu());
+        endGameButton.onClick.AddListener(() => ResetBall(true)); //SceneService.BackToMainMenu());
         retryButton.onClick.AddListener(() => SceneService.StartGame());
         menuButton.onClick.AddListener(() => SceneService.BackToMainMenu());
         
@@ -102,6 +106,12 @@ public class GameManager : MonoBehaviour
     {
         if (_ballInstance != null) _ballInstance.LastBallShot -= LastBallsShot;
         if (_opponentBallInstance != null) _opponentBallInstance.LastBallShot -= LastBallsShot;
+    }
+
+    public void ResetBall(bool aiState = false)
+    {
+        ResetGameState(aiState);
+        _opponentBallInstance.ResetState();
     }
 
     private void SetupZones()
@@ -148,6 +158,27 @@ public class GameManager : MonoBehaviour
         opponentScoreText.gameObject.SetActive(!IsSinglePlayer);
     }
 
+    void RecalculatePlayerShootingZone()
+    {
+        // Apply config if present in the shooting zone
+        var provider = _shootingZones[currentPositionPlayer].GetComponent<ShootingZoneConfigProvider>();
+        if (provider != null)
+        {
+            _ballInstance.ApplyZoneConfig(provider.Config, provider.BackboardTarget);
+            Debug.Log("Player BackboardTarget: " + "X: " + provider.BackboardTarget.position.x + ",Y: " + provider.BackboardTarget.position.y + ",Z: " + provider.BackboardTarget.position.z);
+        }
+    }
+
+    void RecalculateOpponentShootingZone()
+    {
+        // Apply config if present in the shooting zone
+        var oppProvider = _shootingZones[CurrentPositionOpponent].GetComponent<ShootingZoneConfigProvider>();
+        if (oppProvider != null)
+        {
+            _opponentBallInstance.ApplyZoneConfig(oppProvider.Config, oppProvider.BackboardTarget);
+        }
+    }
+
     // Spawn main player
     void SpawnCharacter()
     {
@@ -159,6 +190,9 @@ public class GameManager : MonoBehaviour
             _characterHand = characterAnimator.GetBoneTransform(HumanBodyBones.RightHand).GetChild(5);
 
             _ballInstance = Instantiate(balls[0], _characterHand.position, Quaternion.identity).GetComponent<BallController>();
+
+            RecalculatePlayerShootingZone();
+
             _ballInstance.BallStart = _characterHand;
             _ballInstance.ResetState();
             // Subscribe ball controller to last ball shot event
@@ -173,10 +207,13 @@ public class GameManager : MonoBehaviour
     // TODO: Fix initial rotation towards hoop
     void SpawnOpponent()
     {
-        _opponentInstance = Instantiate(opponentCharacter, _shootingZones[currentPositionOpponent].position + opponentPositionOffset, Quaternion.Euler(0, 180f, 0));
+        _opponentInstance = Instantiate(opponentCharacter, _shootingZones[CurrentPositionOpponent].position + OpponentPositionOffset, Quaternion.Euler(0, 180f, 0));
         if (_opponentInstance)
         {
             _opponentBallInstance = Instantiate(balls[1], _opponentInstance.GetComponent<AIController>().OpponentHand.position, Quaternion.identity).GetComponent<BallController>();
+
+            RecalculateOpponentShootingZone();
+
             // Subscribe to last ball shot event
             _opponentBallInstance.LastBallShot += LastBallsShot;
 
@@ -207,10 +244,87 @@ public class GameManager : MonoBehaviour
     {
         if (currentPosition >= _shootingZones.Length) currentPosition = 0;
         Vector3 newShootingZone = _shootingZones[currentPosition].position;
-        playerInstance.position = new Vector3(newShootingZone.x, 0f, newShootingZone.z) + offset;
+        Vector3 targetPos = new Vector3(newShootingZone.x, 0f, newShootingZone.z) + offset;
+
+        // Get animator and save previous state
+        Animator anim = playerInstance.GetComponentInChildren<Animator>();
+        bool prevAnimEnabled = false;
+        bool prevApplyRoot = false;
+        if (anim != null)
+        {
+            prevAnimEnabled = anim.enabled;
+            prevApplyRoot = anim.applyRootMotion;
+            // Temporarily disable animator/root motion and reset internal state
+            anim.enabled = false;
+            anim.applyRootMotion = false;
+            anim.Rebind();
+            anim.Update(0f);
+        }
+
+        // Snap position + rotation
+        playerInstance.position = targetPos;
         Vector3 direction = HoopBasket.position - playerInstance.position;
         direction.y = 0;
-        playerInstance.rotation = Quaternion.LookRotation(direction);
+        if (direction.sqrMagnitude > 0.0001f)
+            playerInstance.rotation = Quaternion.LookRotation(direction);
+
+        // Clear physics impulses so the character doesn't drift after teleport
+        ClearPhysicsOnTransform(playerInstance);
+
+        // Restore animator and force correct state (prevent immediate root motion move)
+        if (anim != null)
+        {
+            anim.enabled = prevAnimEnabled;
+            anim.applyRootMotion = prevApplyRoot;
+
+            // Reset animator parameters to safe defaults to avoid unexpected translation.
+            // Adjust these names to match your Animator parameters exactly.
+            try
+            {
+                anim.SetBool("shoot", false);
+                //anim.SetBool("dribble", true);
+                anim.Update(0f); // apply immediately
+            }
+            catch (Exception)
+            {
+                // in case parameters don't exist, ignore
+            }
+        }
+    }
+
+    // Zero velocities and reset character controllers on a transform (and its children)
+    private void ClearPhysicsOnTransform(Transform t)
+    {
+        // Zero rigidbodies (temporarily make kinematic to ensure snap)
+        var rbs = t.GetComponentsInChildren<Rigidbody>();
+        foreach (var rb in rbs)
+        {
+            bool wasKinematic = rb.isKinematic;
+            // Temporarily make kinematic to snap without physics impulses
+            rb.isKinematic = true;
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            // restore kinematic state
+            rb.isKinematic = wasKinematic;
+        }
+
+        // Reset CharacterController(s)
+        var controllers = t.GetComponentsInChildren<CharacterController>();
+        foreach (var cc in controllers)
+        {
+            cc.enabled = false;
+            cc.enabled = true;
+        }
+
+        // Reset NavMeshAgent(s) if any (use full name to avoid adding using)
+        var agents = t.GetComponentsInChildren<UnityEngine.AI.NavMeshAgent>();
+        foreach (var ag in agents)
+        {
+            ag.isStopped = true;
+            ag.velocity = Vector3.zero;
+            ag.ResetPath();
+            ag.isStopped = false;
+        }
     }
 
     // Compute shot based on input strength
@@ -244,9 +358,13 @@ public class GameManager : MonoBehaviour
             CameraService?.SetupPlayerCamera(_characterInstance.GetChild(1).transform, CameraTarget);
             InputService?.RestartShot();
             characterAnimator.SetBool("shoot", false);
+
+            RecalculatePlayerShootingZone();
         } else
         {
-            UpdatePosition(ref currentPositionOpponent, _opponentInstance, opponentPositionOffset);
+            UpdatePosition(ref CurrentPositionOpponent, _opponentInstance, OpponentPositionOffset);
+
+            RecalculateOpponentShootingZone();
         }
     }
 
@@ -257,7 +375,7 @@ public class GameManager : MonoBehaviour
         {
             OpponentScore += points;
             opponentScoreText.text = string.Format("AI Score: {0}", OpponentScore);
-            currentPositionOpponent++;  // Update opponent position for next shot
+            CurrentPositionOpponent++;  // Update opponent position for next shot
         } else
         {
             int multiplier = FireballService != null ? FireballService.FireballMultiplier : 1;
@@ -271,6 +389,12 @@ public class GameManager : MonoBehaviour
             // Manage fireOn mode
             FireballService?.AddScore((float)points / 8);
         }
+    }
+
+    public void PlayerWins()
+    {
+        CurrentPositionOpponent++;
+        ResetBall(true);
     }
 
     public void Lose(bool aiLost)

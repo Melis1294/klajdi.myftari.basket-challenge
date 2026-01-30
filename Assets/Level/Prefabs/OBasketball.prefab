@@ -104,7 +104,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   BallStart: {fileID: 0}
-  _fallSpeed: 1.8
+  fallSpeed: 1
+  launchSpeedScale: 0.12
+  minLaunchSpeed: 3
+  maxLaunchSpeed: 20
+  hoopArcPreference: 0.9
+  hoopLaunchScale: 0.15
+  hoopMinLaunch: 3
+  hoopMaxLaunch: 10
+  backboardArcPreference: 0.3
+  backboardLaunchScale: 0.3
+  backboardMinLaunch: 3
+  backboardMaxLaunch: 7
+  debugLaunch: 1
+  computedApex: {x: 0, y: 0, z: 0}
   minHoopSpeed: 40
   maxHoopSpeed: 50
   minBackboardSpeed: 70
@@ -117,7 +130,6 @@ MonoBehaviour:
   rim: {fileID: 8300000, guid: 5a97dd6be809a834fa3520928e101d9a, type: 3}
   backboard: {fileID: 8300000, guid: 54a3f717f7d7ec8458fcd5948f1341d7, type: 3}
   dribble: {fileID: 8300000, guid: 10fd63c8ed6632f4ab4a447a36afa665, type: 3}
-  power: 10
   dribbleHeight: 0.55
   dribbleSpeed: 6
   cameraShakeDuration: 0.25

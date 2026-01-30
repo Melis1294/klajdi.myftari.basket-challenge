@@ -17,10 +17,36 @@ public class BallController : MonoBehaviour
     private string _backboardTag = "Backboard";
     private string _groundTag = "Ground";
 
-    [SerializeField] private float _fallSpeed = 1.8f;
+    [SerializeField] private float fallSpeed = 1.8f;
+    private float _strengthMultiplier = 1f;
+
+    [Header("Launch tuning (input -> physical)")]
+    [SerializeField] private float launchSpeedScale = 0.12f; // legacy fallback
+    [SerializeField] private float minLaunchSpeed = 3f;
+    [SerializeField] private float maxLaunchSpeed = 20f;
+
+    [Header("Hoop tuning")]
+    [Range(0f, 1f)]
+    [SerializeField] private float hoopArcPreference = 0.9f;
+    [SerializeField] private float hoopLaunchScale = 0.15f;
+    [SerializeField] private float hoopMinLaunch = 3f;
+    [SerializeField] private float hoopMaxLaunch = 10f;
+
+    [Header("Backboard tuning")]
+    [Range(0f, 1f)]
+    [SerializeField] private float backboardArcPreference = 0.65f;
+    [SerializeField] private float backboardLaunchScale = 0.11f;
+    [SerializeField] private float backboardMinLaunch = 3f;
+    [SerializeField] private float backboardMaxLaunch = 7f;
+
+    [Header("Debug")]
+    [SerializeField] private bool debugLaunch = true;
+    [SerializeField, Tooltip("Computed apex (vertex) of the last computed trajectory; updated at each shot")]
+    private Vector3 computedApex = Vector3.zero;
+
     private float _elapsed = 1.5f;
-    private readonly float _duration = 1.5f; // total time of flight
-    private readonly float _arcHeight = 2f;  // height of the parabola
+    private readonly float _duration = 1.5f; // total time of flight (unused for physics-driven shot)
+    private readonly float _arcHeight = 2f;  // height of the parabola (unused for physics-driven shot)
     private Vector3 _startPos;
     private Vector3 _endPos;
     private Rigidbody _ballRb;
@@ -47,9 +73,6 @@ public class BallController : MonoBehaviour
     [SerializeField] private AudioClip backboard;
     [SerializeField] private AudioClip dribble;
 
-    // PhysicsMethods
-    public float power = 10.0f;
-
     // Dribble
     [SerializeField] private float dribbleHeight = 0.8f;
     [SerializeField] private float dribbleSpeed = 5f;
@@ -63,6 +86,10 @@ public class BallController : MonoBehaviour
 
     // Events
     public event Action LastBallShot;
+
+    // Shooting zones
+    private ShootingZoneConfig _zoneConfig;
+    private Transform _zoneBackboardTarget;
 
     private enum BallState
     {
@@ -81,6 +108,9 @@ public class BallController : MonoBehaviour
         Rim,
         Hoop
     }
+
+    // Which target chosen by UpdateTarget (used for tuning)
+    private bool _targetIsBackboard = false;
 
     private void Awake()
     {
@@ -102,20 +132,35 @@ public class BallController : MonoBehaviour
         if (_state == BallState.Held) transform.position = _playerHand.position;
     }
 
+    /// <summary>
+    /// Call after the ball instance to apply the config of the shooting zone
+    /// </summary>
+    public void ApplyZoneConfig(ShootingZoneConfig config, Transform backboardTarget)
+    {
+        _zoneConfig = config;
+        _zoneBackboardTarget = backboardTarget;
+    }
+
     void FixedUpdate()
     {
-        if (_state == BallState.Shooting)
-        {
-            if (_elapsed < _duration)
-                ComputeFlight();
-            return;
-        } else 
+        //if (_state == BallState.Shooting)
+        //{
+        //    if (_elapsed < _duration)
+        //        ComputeFlight();
+        //    return;
+        //} else 
+        //if (_state == BallState.Dribbling)
+        //{
+        //    Dribble();
+        //}
+
+        // For physics-driven flight we don't move the ball manually while shooting.
         if (_state == BallState.Dribbling)
         {
             Dribble();
         }
 
-        if (!AIBall)
+        if (!AIBall && _fireTrails != null)
             _fireTrails.SetActive(FireballController.Instance.FireballMultiplier == 2);
     }
 
@@ -164,7 +209,7 @@ public class BallController : MonoBehaviour
         {
             // Update physics according to if player is aiming for the hoop or for the backboard
             _ballRb.isKinematic = false;
-            _ballRb.velocity = (_shootingSpeed >= minBackboardSpeed) ? (Vector3.forward * _fallSpeed * 0.2f) : (Vector3.down * _fallSpeed);
+            _ballRb.velocity = (_shootingSpeed >= minBackboardSpeed) ? (Vector3.forward * fallSpeed * 0.2f) : (Vector3.down * fallSpeed);
             _ballRb.useGravity = true; // Hand control back to physics
         }
     }
@@ -173,27 +218,35 @@ public class BallController : MonoBehaviour
     private void UpdateTarget(float shootingSpeed)
     {
         _diversion = 0;
+        _targetIsBackboard = false;
+
         bool isHoopSpeed = (shootingSpeed >= minHoopSpeed && shootingSpeed <= maxHoopSpeed);
         bool isBackboardSpeed = (shootingSpeed >= minBackboardSpeed && shootingSpeed <= maxBackboardSpeed);
 
         if (isBackboardSpeed)
         {
-            _endPos = GameManager.Instance.Backboard.position;
+            _endPos = _zoneBackboardTarget != null ? _zoneBackboardTarget.position : GameManager.Instance.Backboard.position;
+            _targetIsBackboard = true;
         }
         else if (isHoopSpeed)
         {
             _endPos = GameManager.Instance.HoopBasket.position;
+            _targetIsBackboard = false;
         }
         else if (shootingSpeed > maxBackboardSpeed)
         {
             _endPos = GameManager.Instance.Backboard.position;
             _diversion = 0.8f;
+            _targetIsBackboard = true;
         }
         else
         {
             bool isAlmostHoopSpeed = (shootingSpeed > maxHoopSpeed && (shootingSpeed - maxHoopSpeed) <= 5f)
                 || (shootingSpeed < minHoopSpeed && (minHoopSpeed - shootingSpeed) <= 5f);
             _diversion = isAlmostHoopSpeed ? 0.2f : 0.8f;
+            // default prefer hoop
+            _endPos = GameManager.Instance.HoopBasket.position;
+            _targetIsBackboard = false;
         }
 
         if (_diversion == 0) return;
@@ -203,9 +256,61 @@ public class BallController : MonoBehaviour
         if (axis == -1) _endPos.x += (_diversion * sign);
         if (axis == 1) _endPos.z += (_diversion * sign);
     }
+    //private void UpdateTarget(float shootingSpeed)
+    //{
+    //    _diversion = 0;
+    //    _targetIsBackboard = false;
+
+    //    bool isHoopSpeed = (shootingSpeed >= minHoopSpeed && shootingSpeed <= maxHoopSpeed);
+    //    bool isBackboardSpeed = (shootingSpeed >= minBackboardSpeed && shootingSpeed <= maxBackboardSpeed);
+
+    //    if (isBackboardSpeed)
+    //    {
+    //        // Use zone-specific backboard target if available, otherwise fallback to global
+    //        _endPos = _zoneBackboardTarget != null ? _zoneBackboardTarget.position : GameManager.Instance.Backboard.position;
+    //        _targetIsBackboard = true;
+
+    //        // If this is an AI ball, compensate the backboard target with the opponent spawn offset
+    //        if (AIBall && GameManager.Instance != null)
+    //        {
+    //            _endPos += GameManager.Instance.OpponentPositionOffset;
+    //            if (debugLaunch)
+    //                Debug.Log($"[AI Compensation] Adjusted backboard target by opponentPositionOffset: {_endPos}");
+    //        }
+    //    }
+    //    else if (isHoopSpeed)
+    //    {
+    //        _endPos = GameManager.Instance.HoopBasket.position;
+    //        _targetIsBackboard = false;
+    //    }
+    //    else if (shootingSpeed > maxBackboardSpeed)
+    //    {
+    //        _endPos = GameManager.Instance.Backboard.position;
+    //        _diversion = 0.8f;
+    //        _targetIsBackboard = true;
+    //    }
+    //    else
+    //    {
+    //        bool isAlmostHoopSpeed = (shootingSpeed > maxHoopSpeed && (shootingSpeed - maxHoopSpeed) <= 5f)
+    //            || (shootingSpeed < minHoopSpeed && (minHoopSpeed - shootingSpeed) <= 5f);
+    //        _diversion = isAlmostHoopSpeed ? 0.2f : 0.8f;
+    //        // default prefer hoop
+    //        _endPos = GameManager.Instance.HoopBasket.position;
+    //        _targetIsBackboard = false;
+    //    }
+
+    //    if (_diversion == 0) return;
+
+    //    int sign = UnityEngine.Random.value < 0.5f ? -1 : 1;
+    //    int axis = UnityEngine.Random.value < 0.5f ? -1 : 1;
+    //    if (axis == -1) _endPos.x += (_diversion * sign);
+    //    if (axis == 1) _endPos.z += (_diversion * sign);
+    //}
 
     public void Shoot(float shootingSpeed)
     {
+        shootingSpeed = 72f;
+
         _isFlying = true; // To check on endgame
         _state = BallState.Shooting;
         transform.SetParent(null);
@@ -213,12 +318,69 @@ public class BallController : MonoBehaviour
         _startPos = transform.position;
         GameManager.Instance.SFXManager.PlayOneShot(woosh);
 
-        _ballRb.isKinematic = true; // still script-driven
-
         _shootingSpeed = shootingSpeed;
         UpdateTarget(shootingSpeed);
-        _elapsed = 0f;
+
+        // Ensure collider active
         _ballCollider.enabled = true;
+
+        // Make sure Rigidbody is simulated by physics
+        _ballRb.isKinematic = false;
+        _ballRb.useGravity = true;
+
+        if (_zoneConfig != null)
+        {
+            backboardMaxLaunch = AIBall ? _zoneConfig.OpponentBackBoardMaxLaunch : _zoneConfig.BackBoardMaxLaunch;
+        }
+
+        // Select tuning values depending on target (use zone config if present)
+        float selectedScale = _zoneConfig != null ? (_targetIsBackboard ? _zoneConfig.BackboardLaunchScale : _zoneConfig.HoopLaunchScale) : (_targetIsBackboard ? backboardLaunchScale : hoopLaunchScale);
+        float selectedArcPref = _zoneConfig != null ? (_targetIsBackboard ? _zoneConfig.BackboardArcPreference : _zoneConfig.HoopArcPreference) : (_targetIsBackboard ? backboardArcPreference : hoopArcPreference);
+        float selectedMin = _targetIsBackboard ? backboardMinLaunch : hoopMinLaunch;
+        float selectedMax = _targetIsBackboard ? backboardMaxLaunch : hoopMaxLaunch;
+
+        if (AIBall && _zoneConfig != null)
+        {
+            if (_targetIsBackboard)
+            {
+                selectedScale += +_zoneConfig.OpponentBackBoardLaunchScaleOffset;
+                selectedArcPref += +_zoneConfig.OpponentBackBoardArcPreferenceOffset;
+            } else
+            {
+                selectedScale += +_zoneConfig.OpponentHoopLaunchScaleOffset;
+                selectedArcPref += +_zoneConfig.OpponentHoopArcPreferenceOffset;
+            }
+
+            if (debugLaunch)
+                Debug.Log($"[AI launch scale Compensation] Adjusted target by opponentPositionOffset: {selectedScale}");
+        }
+
+        // Strength multiplier (now interpreted as a multiplier, default fallback field)
+        float selectedStrengthMult = _zoneConfig != null ? Mathf.Max(0.001f, _zoneConfig.StrengthMultiplier) : Mathf.Max(0.001f, _strengthMultiplier);
+
+        // compute launch speed from input (clamped)
+        float launchSpeedUnclamped = shootingSpeed * selectedScale;
+        float launchSpeed = Mathf.Clamp(launchSpeedUnclamped, selectedMin, selectedMax);
+
+        if (debugLaunch)
+            Debug.Log($"[Ball] targetIsBackboard={_targetIsBackboard} input={shootingSpeed:F1} -> launchSpeed={launchSpeed:F2}, arcPref={selectedArcPref:F2}, strengthMult={selectedStrengthMult:F2}");
+
+        // Try compute ballistic initial velocity given computed launchSpeed and arc preference
+        Vector3 launchVelocity;
+        bool ok = TryCalculateLaunchVelocity(_startPos, _endPos, launchSpeed, selectedArcPref, selectedStrengthMult, out launchVelocity);
+
+        if (ok)
+        {
+            _ballRb.velocity = launchVelocity;
+            if (debugLaunch) Debug.Log($"[Ball] launchVelocity={launchVelocity} mag={launchVelocity.magnitude:F2}");
+        }
+        else
+        {
+            // fallback: aim towards target with scaled force
+            Vector3 fallbackDir = (_endPos - _startPos).normalized;
+            _ballRb.velocity = fallbackDir * Mathf.Max(3f, launchSpeed * 0.6f) * selectedStrengthMult;
+            if (debugLaunch) Debug.LogWarning("[Ball] fallback launch used");
+        }
     }
 
     // Called before the shot, when the caracter is animating the shot
@@ -230,6 +392,7 @@ public class BallController : MonoBehaviour
         _ballRb.velocity = Vector3.zero;
         _ballRb.angularVelocity = Vector3.zero;
         _ballRb.isKinematic = true;
+        _ballRb.useGravity = false;
 
         transform.SetParent(hand);
         transform.position = hand.position;
@@ -277,6 +440,7 @@ public class BallController : MonoBehaviour
         _goingDown = true;
 
         _ballRb.isKinematic = true;
+        _ballRb.useGravity = false;
     }
 
     public void StopDribble()
@@ -309,6 +473,7 @@ public class BallController : MonoBehaviour
         _ballRb.useGravity = false;
         _ballRb.velocity = Vector3.zero;
         _ballRb.angularVelocity = Vector3.zero;
+        _ballRb.isKinematic = true;
     }
 
     // Manage collisions with ground, rim and backboard
@@ -380,12 +545,6 @@ public class BallController : MonoBehaviour
         GameManager.Instance.Win(points, AIBall);
     }
 
-    //PhysicsMethods
-    public Vector3 CalculateForce()
-    {
-        return transform.forward * power;
-    }
-
     public void GameOver()
     {
         // Put balls away from map if game is over
@@ -403,5 +562,74 @@ public class BallController : MonoBehaviour
         {
             LastBallShot?.Invoke();
         }
+    }
+
+    // Try to compute a ballistic launch velocity that sends the projectile from start to target
+    // with a given speed magnitude and arc preference. Returns false if no real solution exists (speed too low).
+    // Try to compute a ballistic launch velocity that sends the projectile from start to target
+    // with a given speed magnitude and arc preference. Returns false if no real solution exists (speed too low).
+    private bool TryCalculateLaunchVelocity(Vector3 start, Vector3 target, float speed, float arcPreferenceParam, float strengthMultiplierParam, out Vector3 velocity)
+    {
+        velocity = Vector3.zero;
+
+        Vector3 toTarget = target - start;
+        Vector3 toTargetXZ = new Vector3(toTarget.x, 0f, toTarget.z);
+        float distance = toTargetXZ.magnitude;
+        float yOffset = toTarget.y;
+
+        if (distance < 0.001f)
+        {
+            // almost vertical shot
+            if (Mathf.Approximately(speed, 0f)) return false;
+            float vy = Mathf.Sqrt(2f * Mathf.Abs(Physics.gravity.y) * Mathf.Abs(yOffset));
+            Vector3 resultVert = Vector3.up * Mathf.Sign(yOffset) * vy;
+            velocity = resultVert * strengthMultiplierParam;
+            // apex is simply start + v^2/(2g) upward
+            float tVertex = velocity.y / Mathf.Abs(Physics.gravity.y);
+            computedApex = start + velocity * tVertex + 0.5f * Physics.gravity * tVertex * tVertex;
+            return true;
+        }
+
+        float g = Mathf.Abs(Physics.gravity.y);
+        float v2 = speed * speed;
+        float insideSqrt = v2 * v2 - g * (g * distance * distance + 2f * yOffset * v2);
+
+        if (insideSqrt < 0f)
+        {
+            // no solution with given speed
+            return false;
+        }
+
+        float sqrt = Mathf.Sqrt(insideSqrt);
+
+        // two possible tan(theta) solutions (low arc and high arc)
+        float tanThetaLow = (v2 - sqrt) / (g * distance);
+        float tanThetaHigh = (v2 + sqrt) / (g * distance);
+
+        // compute angles (handle small/negative tan safely)
+        float angleLow = Mathf.Atan(tanThetaLow);
+        float angleHigh = Mathf.Atan(tanThetaHigh);
+
+        // choose angle according to arcPreferenceParam (0 low -> 1 high)
+        float chosenAngle = Mathf.Lerp(angleLow, angleHigh, Mathf.Clamp01(arcPreferenceParam));
+
+        float cos = Mathf.Cos(chosenAngle);
+        float sin = Mathf.Sin(chosenAngle);
+
+        Vector3 dirXZ = toTargetXZ.normalized;
+
+        // Compose initial velocity and apply strength multiplier
+        Vector3 result = dirXZ * (speed * cos) + Vector3.up * (speed * sin);
+        velocity = result * strengthMultiplierParam;
+
+        // compute apex (vertex) position of this parabolic trajectory
+        float tVertexFinal = velocity.y / g; // time to reach vertex (v_y / g)
+        if (tVertexFinal < 0f) tVertexFinal = 0f;
+        computedApex = start + velocity * tVertexFinal + 0.5f * Physics.gravity * tVertexFinal * tVertexFinal;
+
+        if (debugLaunch)
+            Debug.Log($"[TryCalculateLaunchVelocity] chosenAngle={chosenAngle * Mathf.Rad2Deg:F1} deg, apex={computedApex}, vel={velocity}");
+
+        return true;
     }
 }

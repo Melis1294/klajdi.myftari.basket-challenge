@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab05841b1b2c8a048a6544d6f1826317, type: 3}
+  m_Name: Zone_6
+  m_EditorClassIdentifier: 
+  HoopLaunchScale: 0.16
+  HoopArcPreference: 0.9
+  BackboardLaunchScale: 0.18
+  BackboardArcPreference: 0.403
+  StrengthMultiplier: 0.966
+  BackBoardMaxLaunch: 7
+  OpponentLaunchScaleOffset: 0.07
+  OpponentArcPreferenceOffset: 0
