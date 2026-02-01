@@ -56,6 +56,8 @@ public class BallController : MonoBehaviour
     [SerializeField] float maxHoopSpeed = 50;
     [SerializeField] float minBackboardSpeed = 70;
     [SerializeField] float maxBackboardSpeed = 75;
+    [SerializeField] float customSpeed = 50f;
+    //[SerializeField] float diversionValue = 0.007f;
     private float _diversion = 0;
     private float _shootingSpeed;
     private GameObject _fireTrails; // Particle System for the fireball
@@ -215,23 +217,42 @@ public class BallController : MonoBehaviour
     }
 
     // Compute shot logic in relation to right values for hoop and backboard
-    private void UpdateTarget(float shootingSpeed)
+    private void UpdateTarget(ref float shootingSpeed)
     {
         _diversion = 0;
         _targetIsBackboard = false;
 
+        bool lessThanMinSpeed = (shootingSpeed < minHoopSpeed && (minHoopSpeed - shootingSpeed) > 5f);
+        bool moreThankMaxLessThanBB = (shootingSpeed > (maxHoopSpeed + 5) && shootingSpeed < minBackboardSpeed);
         bool isHoopSpeed = (shootingSpeed >= minHoopSpeed && shootingSpeed <= maxHoopSpeed);
         bool isBackboardSpeed = (shootingSpeed >= minBackboardSpeed && shootingSpeed <= maxBackboardSpeed);
 
-        if (isBackboardSpeed)
+        if (lessThanMinSpeed) shootingSpeed = 20;
+        else if (moreThankMaxLessThanBB)
+        {
+            shootingSpeed = 50;
+            _diversion = 0.8f;
+            _targetIsBackboard = true;
+        }
+        else if (shootingSpeed > maxBackboardSpeed)
+        {
+            shootingSpeed = 60;
+            _diversion = 0.8f;
+            _targetIsBackboard = true;
+        }
+        else if (isBackboardSpeed)
         {
             _endPos = _zoneBackboardTarget != null ? _zoneBackboardTarget.position : GameManager.Instance.Backboard.position;
             _targetIsBackboard = true;
+
+            shootingSpeed = GameManager.Instance.BackBoardSpeed;
         }
         else if (isHoopSpeed)
         {
             _endPos = GameManager.Instance.HoopBasket.position;
             _targetIsBackboard = false;
+
+            shootingSpeed = GameManager.Instance.HoopSpeed;
         }
         else if (shootingSpeed > maxBackboardSpeed)
         {
@@ -239,14 +260,23 @@ public class BallController : MonoBehaviour
             _diversion = 0.8f;
             _targetIsBackboard = true;
         }
-        else
+        else if (_zoneConfig != null)
         {
-            bool isAlmostHoopSpeed = (shootingSpeed > maxHoopSpeed && (shootingSpeed - maxHoopSpeed) <= 5f)
-                || (shootingSpeed < minHoopSpeed && (minHoopSpeed - shootingSpeed) <= 5f);
-            _diversion = isAlmostHoopSpeed ? 0.2f : 0.8f;
-            // default prefer hoop
-            _endPos = GameManager.Instance.HoopBasket.position;
-            _targetIsBackboard = false;
+            if (shootingSpeed > maxHoopSpeed && (shootingSpeed - maxHoopSpeed) <= 5f)
+            {
+                _endPos = GameManager.Instance.HoopBasket.position;
+                _targetIsBackboard = false;
+
+                shootingSpeed = _zoneConfig.AlmostMax;
+
+            }
+            else if (shootingSpeed < minHoopSpeed && (minHoopSpeed - shootingSpeed) <= 5f)
+            {
+                _endPos = GameManager.Instance.HoopBasket.position;
+                _targetIsBackboard = false;
+
+                shootingSpeed = _zoneConfig.AlmostMin;
+            }
         }
 
         if (_diversion == 0) return;
@@ -256,61 +286,11 @@ public class BallController : MonoBehaviour
         if (axis == -1) _endPos.x += (_diversion * sign);
         if (axis == 1) _endPos.z += (_diversion * sign);
     }
-    //private void UpdateTarget(float shootingSpeed)
-    //{
-    //    _diversion = 0;
-    //    _targetIsBackboard = false;
-
-    //    bool isHoopSpeed = (shootingSpeed >= minHoopSpeed && shootingSpeed <= maxHoopSpeed);
-    //    bool isBackboardSpeed = (shootingSpeed >= minBackboardSpeed && shootingSpeed <= maxBackboardSpeed);
-
-    //    if (isBackboardSpeed)
-    //    {
-    //        // Use zone-specific backboard target if available, otherwise fallback to global
-    //        _endPos = _zoneBackboardTarget != null ? _zoneBackboardTarget.position : GameManager.Instance.Backboard.position;
-    //        _targetIsBackboard = true;
-
-    //        // If this is an AI ball, compensate the backboard target with the opponent spawn offset
-    //        if (AIBall && GameManager.Instance != null)
-    //        {
-    //            _endPos += GameManager.Instance.OpponentPositionOffset;
-    //            if (debugLaunch)
-    //                Debug.Log($"[AI Compensation] Adjusted backboard target by opponentPositionOffset: {_endPos}");
-    //        }
-    //    }
-    //    else if (isHoopSpeed)
-    //    {
-    //        _endPos = GameManager.Instance.HoopBasket.position;
-    //        _targetIsBackboard = false;
-    //    }
-    //    else if (shootingSpeed > maxBackboardSpeed)
-    //    {
-    //        _endPos = GameManager.Instance.Backboard.position;
-    //        _diversion = 0.8f;
-    //        _targetIsBackboard = true;
-    //    }
-    //    else
-    //    {
-    //        bool isAlmostHoopSpeed = (shootingSpeed > maxHoopSpeed && (shootingSpeed - maxHoopSpeed) <= 5f)
-    //            || (shootingSpeed < minHoopSpeed && (minHoopSpeed - shootingSpeed) <= 5f);
-    //        _diversion = isAlmostHoopSpeed ? 0.2f : 0.8f;
-    //        // default prefer hoop
-    //        _endPos = GameManager.Instance.HoopBasket.position;
-    //        _targetIsBackboard = false;
-    //    }
-
-    //    if (_diversion == 0) return;
-
-    //    int sign = UnityEngine.Random.value < 0.5f ? -1 : 1;
-    //    int axis = UnityEngine.Random.value < 0.5f ? -1 : 1;
-    //    if (axis == -1) _endPos.x += (_diversion * sign);
-    //    if (axis == 1) _endPos.z += (_diversion * sign);
-    //}
 
     public void Shoot(float shootingSpeed)
     {
-        shootingSpeed = 72f;
-
+        //shootingSpeed = customSpeed;
+        if (debugLaunch && !AIBall) Debug.LogError("Speed: " + shootingSpeed);
         _isFlying = true; // To check on endgame
         _state = BallState.Shooting;
         transform.SetParent(null);
@@ -319,7 +299,7 @@ public class BallController : MonoBehaviour
         GameManager.Instance.SFXManager.PlayOneShot(woosh);
 
         _shootingSpeed = shootingSpeed;
-        UpdateTarget(shootingSpeed);
+        UpdateTarget(ref shootingSpeed);
 
         // Ensure collider active
         _ballCollider.enabled = true;

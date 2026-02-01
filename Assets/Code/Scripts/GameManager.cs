@@ -4,7 +4,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-//TODO: Fix camera position after shot
 //TODO: Fix balls collision between each other
 //TODO: Fix ball collision outside map (respawn) -> Consider using Layers
 
@@ -15,9 +14,12 @@ public class GameManager : MonoBehaviour
     public Transform Backboard;
     public Transform ShootingZone;
     public Transform EndGameZoneEmpty;
+    public float HoopSpeed = 45f;
+    public float BackBoardSpeed = 72f;
     [SerializeField] private Transform mainCharacter;
     [SerializeField] private Transform opponentCharacter;
     [SerializeField] int currentPositionPlayer = 0;
+    public RectTransform FillHoop;
     [SerializeField] private GameObject[] balls;
     private Transform _characterInstance;
     private Transform _characterHand;
@@ -111,7 +113,7 @@ public class GameManager : MonoBehaviour
     public void ResetBall(bool aiState = false)
     {
         ResetGameState(aiState);
-        _opponentBallInstance.ResetState();
+        _ballInstance.ResetState();
     }
 
     private void SetupZones()
@@ -165,6 +167,23 @@ public class GameManager : MonoBehaviour
         if (provider != null)
         {
             _ballInstance.ApplyZoneConfig(provider.Config, provider.BackboardTarget);
+
+            //ShootingZoneConfig _zoneConfig = provider.Config;
+            //if (_zoneConfig != null)
+            //{
+            //    // Update hoop slider area
+            //    // Height
+            //    Vector2 size = FillHoop.sizeDelta;
+            //    size.y = provider.Config.Height;
+            //    FillHoop.sizeDelta = size;
+
+            //    //PosY
+            //    Vector2 pos = FillHoop.anchoredPosition;
+            //    pos.y = provider.Config.PosY;
+            //    FillHoop.anchoredPosition = pos;
+
+            //    Debug.Log("Updated Hoop Slider AREA");
+            //}
             Debug.Log("Player BackboardTarget: " + "X: " + provider.BackboardTarget.position.x + ",Y: " + provider.BackboardTarget.position.y + ",Z: " + provider.BackboardTarget.position.z);
         }
     }
@@ -393,8 +412,8 @@ public class GameManager : MonoBehaviour
 
     public void PlayerWins()
     {
-        CurrentPositionOpponent++;
-        ResetBall(true);
+        currentPositionPlayer++;
+        ResetBall();
     }
 
     public void Lose(bool aiLost)

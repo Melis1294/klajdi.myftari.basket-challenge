@@ -10,20 +10,20 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ab05841b1b2c8a048a6544d6f1826317, type: 3}
-  m_Name: Zone_6
+  m_Name: Zone_2
   m_EditorClassIdentifier: 
   HoopLaunchScale: 0.16
   HoopArcPreference: 0.9
-  BackboardLaunchScale: 0.18
-  BackboardArcPreference: 0.403
-  StrengthMultiplier: 0.966
+  BackboardLaunchScale: 0.11
+  BackboardArcPreference: 0.65
+  StrengthMultiplier: 1
   BackBoardMaxLaunch: 7
   OpponentHoopLaunchScaleOffset: 0.05
   OpponentHoopArcPreferenceOffset: 0.01
   OpponentBackBoardLaunchScaleOffset: 0.05
   OpponentBackBoardArcPreferenceOffset: 0.01
   OpponentBackBoardMaxLaunch: 7
-  PosY: 7.8
+  PosY: 4.7
   Height: 8
-  AlmostMin: 44.3
-  AlmostMax: 49.8
+  AlmostMin: 42.3
+  AlmostMax: 47.1

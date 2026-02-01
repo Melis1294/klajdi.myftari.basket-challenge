@@ -23,3 +23,7 @@ MonoBehaviour:
   OpponentBackBoardLaunchScaleOffset: 0.05
   OpponentBackBoardArcPreferenceOffset: 0.01
   OpponentBackBoardMaxLaunch: 8.37
+  PosY: 5
+  Height: 5.5
+  AlmostMin: 43.3
+  AlmostMax: 47.1

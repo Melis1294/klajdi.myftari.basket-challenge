@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class CameraController : MonoBehaviour
 {
-    private float _elapsed = 2f;   // Current time of flight
-    private float _duration = 2f;  // Total time of flight
+    private float _elapsed = 1.2f;   // Current time of flight
+    private float _duration = 1.2f;  // Total time of flight
     private float _arcHeight = 2f;   // Height of the parable vertex
     private Transform _cameraHolder;
     private Transform _cameraStart;
@@ -45,6 +45,7 @@ public class CameraController : MonoBehaviour
         _cameraEnd = cameraTarget;
         SetupCameraMove();
         ResetCamera();
+        _elapsed = _duration;
     }
 
     void Update()

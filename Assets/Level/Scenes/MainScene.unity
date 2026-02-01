@@ -1277,8 +1277,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 5}
-  m_SizeDelta: {x: 0, y: 20}
+  m_AnchoredPosition: {x: 1, y: 5}
+  m_SizeDelta: {x: 0, y: 15}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &63030998
 MonoBehaviour:
@@ -9787,7 +9787,7 @@ MonoBehaviour:
   m_MinValue: 0
   m_MaxValue: 90
   m_WholeNumbers: 0
-  m_Value: 90
+  m_Value: 50
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -11837,9 +11837,12 @@ MonoBehaviour:
   Backboard: {fileID: 1971731355}
   ShootingZone: {fileID: 1375906512}
   EndGameZoneEmpty: {fileID: 112080945}
+  HoopSpeed: 45
+  BackBoardSpeed: 72
   mainCharacter: {fileID: 7483116572789041910, guid: cc1083956f401f7438502343e9493658, type: 3}
   opponentCharacter: {fileID: 1670995659681555205, guid: 4e8c79d1c1ed0c4468ee124579e51dd2, type: 3}
   currentPositionPlayer: 0
+  FillHoop: {fileID: 63030997}
   balls:
   - {fileID: 6536287185626285137, guid: 993caf427bad3c04dad8a1628b1abdf7, type: 3}
   - {fileID: 5849473246159792786, guid: 9456647ba6a2e1a4bbaf949868ac188f, type: 3}
@@ -14149,7 +14152,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 14001e4a30d5df8429b4425aea0aad78, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Config: {fileID: 11400000, guid: f79d463a977f16c44a50bf42a6491778, type: 2}
+  Config: {fileID: 11400000, guid: a07512d629475ae4cb95797b496630bc, type: 2}
   BackboardTarget: {fileID: 1971731355}
 --- !u!1 &1964725473
 GameObject:

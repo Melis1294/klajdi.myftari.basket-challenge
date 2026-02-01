@@ -17,10 +17,16 @@ public class ShootingZoneConfig : ScriptableObject
     public float StrengthMultiplier = 1f;
     [Range(0f, 20f)]
     public float BackBoardMaxLaunch = 7f;
-    [Header("Hoop")]
+    [Header("Hoop Opponent")]
     public float OpponentHoopLaunchScaleOffset = 0.05f;
     public float OpponentHoopArcPreferenceOffset = 0.01f;
     public float OpponentBackBoardLaunchScaleOffset = 0.05f;
     public float OpponentBackBoardArcPreferenceOffset = 0.01f;
     public float OpponentBackBoardMaxLaunch = 7f;
+    [Header("Hoop Rect Transform Params")]
+    public float PosY = 3f;
+    public float Height = 8f;
+    [Header("Almost Hoop")]
+    public float AlmostMin = 41.2f;
+    public float AlmostMax = 46.3f;
 }
