@@ -13,6 +13,9 @@ public class SceneController : MonoBehaviour
         Instance = this;
 
         DontDestroyOnLoad(this.gameObject);
+
+        Time.timeScale = 1f;
+        AudioListener.pause = false;
     }
 
     public void SetScores(int playerScore, int opponentScore = 0)

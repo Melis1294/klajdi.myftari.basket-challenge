@@ -20,7 +20,7 @@ public class FireballController : MonoBehaviour
     // UI
     private Slider _slider;
     private Image _sliderFill;
-    private Color _normalColor = new Color(200f / 255f, 200f / 255f, 200f / 255f);
+    private Color _normalColor = new Color(255f / 255f, 255f / 255f, 255f / 255f);
     private Color _bonusColor = new Color(255f / 255f, 140f / 255f, 110f / 255f);
 
     // Audio
@@ -62,6 +62,8 @@ public class FireballController : MonoBehaviour
         {
             DrainSlider();
         }
+
+        if (_slider.value == 0) _sliderFill.color = _normalColor;
     }
 
     private void DrainSlider()
@@ -118,8 +120,6 @@ public class FireballController : MonoBehaviour
             // Play fire off only if fireball was on before losing bonus
             if (_sliderFill.color == _bonusColor)
                 GameManager.Instance.SFXManager.PlayOneShot(fireOff);
-
-            _sliderFill.color = _normalColor;
         }
     }
 }

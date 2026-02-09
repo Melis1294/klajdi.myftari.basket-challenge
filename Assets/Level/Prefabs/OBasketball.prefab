@@ -55,6 +55,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: OBasketball
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 278110af4afb7dc49a9b6efaa9c5209e, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 278110af4afb7dc49a9b6efaa9c5209e, type: 3}
 --- !u!1 &5849473246159792786 stripped
@@ -122,6 +126,7 @@ MonoBehaviour:
   maxHoopSpeed: 50
   minBackboardSpeed: 70
   maxBackboardSpeed: 75
+  customSpeed: 50
   AIBall: 0
   Opponent: {fileID: 0}
   bounce: {fileID: 8300000, guid: f4232bbf4b6c7f548ae5d7d20e6e4914, type: 3}
@@ -130,6 +135,7 @@ MonoBehaviour:
   rim: {fileID: 8300000, guid: 5a97dd6be809a834fa3520928e101d9a, type: 3}
   backboard: {fileID: 8300000, guid: 54a3f717f7d7ec8458fcd5948f1341d7, type: 3}
   dribble: {fileID: 8300000, guid: 10fd63c8ed6632f4ab4a447a36afa665, type: 3}
+  wow: {fileID: 8300000, guid: f8be3d3f560e9bb489797ba8f1cbba76, type: 3}
   dribbleHeight: 0.55
   dribbleSpeed: 6
   cameraShakeDuration: 0.25

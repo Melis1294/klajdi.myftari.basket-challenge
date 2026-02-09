@@ -9,11 +9,12 @@ TagManager:
   - Backboard
   - Hoop
   - BallPos
+  - Court
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Ball
   - Water
   - UI
   - 

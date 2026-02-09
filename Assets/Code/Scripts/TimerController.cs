@@ -1,7 +1,8 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using TMPro;
+using UnityEngine;
+using static GameManager;
 
 public class TimerController : MonoBehaviour
 {
@@ -13,13 +14,16 @@ public class TimerController : MonoBehaviour
     [SerializeField] private bool _gameStarted;
     [SerializeField] private float _timeBetweenGameEndEvents = 3.2f;
     private bool _lastSeconds = false;
+    private bool _lastSecondsColor = false;
     private int _currentCountDownValue = -1;
 
     // UI
     [SerializeField] private TextMeshProUGUI gameTimerText;
     [SerializeField] private TextMeshProUGUI startupTimerText;
+    [SerializeField] private Animator startupTimerAnimator;
     [SerializeField] private GameObject gameOverScreen;
-    [SerializeField] private TextMeshProUGUI retryButtonText;
+    [SerializeField] private GameObject gameScreen;
+    [SerializeField] private GameObject pauseScreen;
     private TextMeshProUGUI _totalScoreUI;
 
     // Audio
@@ -42,7 +46,15 @@ public class TimerController : MonoBehaviour
         }
         gameOverScreen.SetActive(false);
         RemainingTime = SceneController.Instance.GetRetryTimer();
-        _totalScoreUI = gameOverScreen.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
+        _totalScoreUI = gameOverScreen.transform.GetChild(0).transform.GetChild(0).GetComponent<TextMeshProUGUI>();
+
+        GameManager.OnGameStateChanged += GameManagerOnGameStateChanged;
+    }
+
+    // Unsubscribe method to state change events on object destroy
+    private void OnDestroy()
+    {
+        GameManager.OnGameStateChanged -= GameManagerOnGameStateChanged;
     }
 
     // Show or hide startup and game timers accordingly
@@ -62,6 +74,7 @@ public class TimerController : MonoBehaviour
             if (_currentCountDownValue != countdown)
             {
                 GameManager.Instance.SFXManager.PlayOneShot(start_beep);
+                startupTimerAnimator.Play("countdown", 0, 0f);
                 _currentCountDownValue = countdown;
             }
 
@@ -71,6 +84,7 @@ public class TimerController : MonoBehaviour
                 _startupTime = 1;
                 UpdateTimersUI();
                 GameManager.Instance.UpdateGameState(GameManager.GameState.Play);
+                if (PlayerPrefs.GetInt("TutorialDone") != 1) GameManager.Instance.StartTutorial();
             }
             return;
         }
@@ -85,6 +99,11 @@ public class TimerController : MonoBehaviour
                 _lastSeconds = true;
                 GameManager.Instance.SFXManager.PlayOneShot(ticking);
             }
+            if (RemainingTime <= 4 && !_lastSecondsColor)
+            {
+                _lastSecondsColor = true;
+                gameTimerText.color = Color.red;
+            }
         }
         else if (RemainingTime < 0)
         {
@@ -97,7 +116,7 @@ public class TimerController : MonoBehaviour
         }
         int minutes = Mathf.FloorToInt(RemainingTime / 60);
         int seconds = Mathf.FloorToInt(RemainingTime % 60);
-        gameTimerText.text = string.Format("Time: {0:00}:{1:00}", minutes, seconds);
+        gameTimerText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
     }
 
     void UpdateTimersUI()
@@ -105,6 +124,8 @@ public class TimerController : MonoBehaviour
         ResetStartupTimer();
         gameTimerText.transform.parent.gameObject.SetActive(_gameStarted);
         startupTimerText.enabled = !_gameStarted;
+        gameScreen.SetActive(_gameStarted);
+        pauseScreen.SetActive(false);
     }
 
     private void ResetStartupTimer()
@@ -119,6 +140,10 @@ public class TimerController : MonoBehaviour
     {
         // Wait on computing the scores until last ball shots are over
         yield return new WaitUntil(() => GameManager.Instance.LastBallsAreShot() && !InputManager.Instance.IsShooting);
+        
+        gameScreen.SetActive(false); // Disable game screen
+        BackboardController.Instance.ResetValue();
+        BackboardController.Instance.enabled = false;
 
         int playerScore = GameManager.Instance.TotalScore;
         int opponentScore = GameManager.Instance.OpponentScore;
@@ -134,7 +159,7 @@ public class TimerController : MonoBehaviour
             // Reset total scores and set even points timer mode
             SceneController.Instance.SetScores(playerScore, opponentScore);
             SceneController.Instance.SetRetryTimer(10f);
-            StartCoroutine(EvenPoints());
+            StartCoroutine(EvenPoints(playerScore));
         } else
         {
             yield return new WaitForSeconds(_timeBetweenGameEndEvents);
@@ -154,10 +179,7 @@ public class TimerController : MonoBehaviour
         yield return new WaitForSeconds(_timeBetweenGameEndEvents * 4);
         string victoryText = isSinglePlayer ? "" : playerWins ? "You win!\n" : "You lose!\n";
         string scoreRecapText = isSinglePlayer ? playerScore.ToString() : string.Format("{0} - {1}", playerScore, opponentScore);
-        _totalScoreUI.text = string.Format("{0}Total Score\n{1}", victoryText, scoreRecapText);
-        if (!playerWins) retryButtonText.text = "Retry";
-        BackboardController.Instance.ResetValue();
-        BackboardController.Instance.enabled = false;
+        _totalScoreUI.text = string.Format("{0}Total score\n{1}", victoryText, scoreRecapText);
         gameTimerText.transform.parent.gameObject.SetActive(false);
         gameOverScreen.SetActive(true);
 
@@ -166,12 +188,20 @@ public class TimerController : MonoBehaviour
         SceneController.Instance.ResetRetryTimer();
     }
 
-    IEnumerator EvenPoints()
+    IEnumerator EvenPoints(int evenScore)
     {
-        _totalScoreUI.text = string.Format("The score is even\nRetry for\n{0} seconds", 10f);
+        _totalScoreUI.text = string.Format("{0} - {0}\n+{1}s", evenScore, 10f);
         gameOverScreen.SetActive(true);
         gameOverScreen.transform.GetChild(1).gameObject.SetActive(false);   // Turn off replay button
         yield return new WaitForSeconds(3f);
         SceneController.Instance.StartGame();
+    }
+
+    // Manage states change
+    void GameManagerOnGameStateChanged(GameManager.GameState state)
+    {
+        bool isPaused = state == GameState.Pause;
+        gameScreen.SetActive(!isPaused && _gameStarted);
+        pauseScreen.SetActive(isPaused);
     }
 }

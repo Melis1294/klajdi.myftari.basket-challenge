@@ -10,6 +10,8 @@ public class BackboardController : MonoBehaviour
     [SerializeField] private float totalTime = 60f;
     [SerializeField] private float upgradeDuration = 10f;
     [SerializeField] private TextMeshPro bonusText;
+    [SerializeField] private Animator animator;
+    [SerializeField] private AudioClip blinkAudio;
 
     private int currentValue;
     private int upgradesDone = 0;
@@ -29,9 +31,6 @@ public class BackboardController : MonoBehaviour
             Instance = this;
         }
         bonusText.enabled = isUpgraded;
-
-        // Subscribe method to state change events
-        GameManager.OnGameStateChanged += ManageTextVisibility;
     }
 
     void Start()
@@ -42,11 +41,6 @@ public class BackboardController : MonoBehaviour
         nextUpgradeTime = Random.Range(totalTime * (5f / 60f), totalTime * (10f / 60f));
     }
 
-    private void OnDestroy()
-    {
-        // Subscribe method to state change events
-        GameManager.OnGameStateChanged -= ManageTextVisibility;
-    }
 
     void Update()
     {
@@ -85,6 +79,10 @@ public class BackboardController : MonoBehaviour
         }
         bonusText.text = string.Format("Bonus {0} points!", currentValue);
         bonusText.enabled = isUpgraded;
+
+        // FX
+        GameManager.Instance.SFXManager.PlayOneShot(blinkAudio);
+        animator.Play("backboard_blink", 0, 0f);
     }
 
     public void ResetValue()
@@ -97,10 +95,5 @@ public class BackboardController : MonoBehaviour
     public int GetValue()
     {
         return currentValue;
-    }
-
-    public void ManageTextVisibility(GameManager.GameState state)
-    {
-        if (state == GameManager.GameState.GameOver) ResetValue();
     }
 }

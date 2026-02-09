@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class ScoreController : MonoBehaviour
 {
-    [SerializeField] private float lifetime = 3f;
+    [SerializeField] private float lifetime = 6f;
     private Transform _camera;
     private RectTransform _rectTransform;
 

@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 138409649920020412}
   - component: {fileID: 5085298711689625756}
   - component: {fileID: 7773839308217601670}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: PS_Firetrail
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4821,7 +4821,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7888529280834089524}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Fires
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4856,7 +4856,7 @@ GameObject:
   - component: {fileID: 7932426985440536063}
   - component: {fileID: 7757800449845432717}
   - component: {fileID: 5805984985343446885}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: PS_Fire
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9673,6 +9673,10 @@ PrefabInstance:
       value: RWBBasketball
       objectReference: {fileID: 0}
     - target: {fileID: 1706498434964970417, guid: d885f4695e507f84088b781dbb50d995, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1706498434964970417, guid: d885f4695e507f84088b781dbb50d995, type: 3}
       propertyPath: m_TagString
       value: Player
       objectReference: {fileID: 0}
@@ -9759,7 +9763,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   BallStart: {fileID: 0}
   fallSpeed: 1
-  strengthMultiplier: 1
   launchSpeedScale: 0.12
   minLaunchSpeed: 3
   maxLaunchSpeed: 20
@@ -9777,6 +9780,7 @@ MonoBehaviour:
   maxHoopSpeed: 50
   minBackboardSpeed: 70
   maxBackboardSpeed: 75
+  customSpeed: 50
   AIBall: 0
   Opponent: {fileID: 0}
   bounce: {fileID: 8300000, guid: f4232bbf4b6c7f548ae5d7d20e6e4914, type: 3}
@@ -9785,6 +9789,7 @@ MonoBehaviour:
   rim: {fileID: 8300000, guid: 5a97dd6be809a834fa3520928e101d9a, type: 3}
   backboard: {fileID: 8300000, guid: 54a3f717f7d7ec8458fcd5948f1341d7, type: 3}
   dribble: {fileID: 8300000, guid: 10fd63c8ed6632f4ab4a447a36afa665, type: 3}
+  wow: {fileID: 8300000, guid: f8be3d3f560e9bb489797ba8f1cbba76, type: 3}
   dribbleHeight: 0.6
   dribbleSpeed: 6
   cameraShakeDuration: 0.25

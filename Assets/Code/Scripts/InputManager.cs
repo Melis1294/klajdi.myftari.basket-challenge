@@ -11,12 +11,13 @@ public class InputManager : MonoBehaviour
     private float _touchStregth;
     public bool IsShooting;           // Define shot params - if "true" prevents shooting until new shot
     private float _remainingTime;
+    private bool _firstShot = true;
     #region Mouse Input
     [SerializeField] private float mosueSpeedMultiply = 2.3f;
     #endregion
     #region Touch Input
     private bool _isSwiping;
-    [SerializeField] private float touchSpeedMultiply = 0.002f;
+    [SerializeField] private float touchSpeedMultiply = 0.5f;
     private Vector2 _startTouchPos;
     private Vector2 _endTouchPos;
     #endregion
@@ -156,6 +157,14 @@ public class InputManager : MonoBehaviour
 
     void ShootAndResetParams()
     {
+#if UNITY_WEBGL
+        if (_firstShot)
+        {
+            GameManager.Instance.EndTutorial();
+            _firstShot = false;
+        }
+#endif
+
         GameManager.Instance.OnBallShot(_strength);
         ResetParams();
     }
@@ -172,6 +181,7 @@ public class InputManager : MonoBehaviour
     void UpdateShotUI(double strength = 0)
     {
         slider.value = (float)strength;
+        Debug.LogWarning("Slider value: " + slider.value);
     }
 
     // Manage states change

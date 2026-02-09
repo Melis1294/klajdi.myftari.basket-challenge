@@ -16,6 +16,7 @@ public class BallController : MonoBehaviour
     private string _rimTag = "Rim";
     private string _backboardTag = "Backboard";
     private string _groundTag = "Ground";
+    private string _courtTag = "Court";
 
     [SerializeField] private float fallSpeed = 1.8f;
     private float _strengthMultiplier = 1f;
@@ -74,6 +75,7 @@ public class BallController : MonoBehaviour
     [SerializeField] private AudioClip rim;
     [SerializeField] private AudioClip backboard;
     [SerializeField] private AudioClip dribble;
+    [SerializeField] private AudioClip wow;
 
     // Dribble
     [SerializeField] private float dribbleHeight = 0.8f;
@@ -223,22 +225,19 @@ public class BallController : MonoBehaviour
         _targetIsBackboard = false;
 
         bool lessThanMinSpeed = (shootingSpeed < minHoopSpeed && (minHoopSpeed - shootingSpeed) > 5f);
-        bool moreThankMaxLessThanBB = (shootingSpeed > (maxHoopSpeed + 5) && shootingSpeed < minBackboardSpeed);
+        bool moreThankMaxButLessThanBB = (shootingSpeed > (maxHoopSpeed + 5) && shootingSpeed < minBackboardSpeed);
         bool isHoopSpeed = (shootingSpeed >= minHoopSpeed && shootingSpeed <= maxHoopSpeed);
         bool isBackboardSpeed = (shootingSpeed >= minBackboardSpeed && shootingSpeed <= maxBackboardSpeed);
 
-        if (lessThanMinSpeed) shootingSpeed = 20;
-        else if (moreThankMaxLessThanBB)
+        if (isHoopSpeed)
         {
-            shootingSpeed = 50;
-            _diversion = 0.8f;
-            _targetIsBackboard = true;
-        }
-        else if (shootingSpeed > maxBackboardSpeed)
-        {
-            shootingSpeed = 60;
-            _diversion = 0.8f;
-            _targetIsBackboard = true;
+            _endPos = GameManager.Instance.HoopBasket.position;
+            _targetIsBackboard = false;
+
+            shootingSpeed = GameManager.Instance.HoopSpeed;
+
+            if (debugLaunch && !AIBall)
+                Debug.LogWarning("isHoopSpeed");
         }
         else if (isBackboardSpeed)
         {
@@ -246,37 +245,55 @@ public class BallController : MonoBehaviour
             _targetIsBackboard = true;
 
             shootingSpeed = GameManager.Instance.BackBoardSpeed;
+
+            if (debugLaunch && !AIBall)
+                Debug.LogWarning("isBackboardSpeed");
         }
-        else if (isHoopSpeed)
+        else if (shootingSpeed > maxHoopSpeed && (shootingSpeed - maxHoopSpeed) <= 5f && _zoneConfig != null)
         {
             _endPos = GameManager.Instance.HoopBasket.position;
             _targetIsBackboard = false;
 
-            shootingSpeed = GameManager.Instance.HoopSpeed;
+            shootingSpeed = _zoneConfig.AlmostMax;
+
+            if (debugLaunch && !AIBall)
+                Debug.LogWarning("AlmostMax");
+        }
+        else if (shootingSpeed < minHoopSpeed && (minHoopSpeed - shootingSpeed) <= 5f && _zoneConfig != null)
+        {
+            _endPos = GameManager.Instance.HoopBasket.position;
+            _targetIsBackboard = false;
+
+            shootingSpeed = _zoneConfig.AlmostMin;
+
+            if (debugLaunch && !AIBall)
+                Debug.LogWarning("AlmostMin");
+        }
+        else if (lessThanMinSpeed) { 
+            shootingSpeed = 35;
+            _diversion = 1.2f;
+
+            if (debugLaunch && !AIBall)
+                Debug.LogWarning("lessThanMinSpeed");
+        }
+        else if (moreThankMaxButLessThanBB)
+        {
+            shootingSpeed = 60;
+            _diversion = 1.2f;
+            _targetIsBackboard = true;
+
+            if (debugLaunch && !AIBall)
+                Debug.LogWarning("moreThankMaxButLessThanBB");
         }
         else if (shootingSpeed > maxBackboardSpeed)
         {
             _endPos = GameManager.Instance.Backboard.position;
-            _diversion = 0.8f;
+            shootingSpeed = 90;
+            _diversion = 1.2f;
             _targetIsBackboard = true;
-        }
-        else if (_zoneConfig != null)
-        {
-            if (shootingSpeed > maxHoopSpeed && (shootingSpeed - maxHoopSpeed) <= 5f)
-            {
-                _endPos = GameManager.Instance.HoopBasket.position;
-                _targetIsBackboard = false;
 
-                shootingSpeed = _zoneConfig.AlmostMax;
-
-            }
-            else if (shootingSpeed < minHoopSpeed && (minHoopSpeed - shootingSpeed) <= 5f)
-            {
-                _endPos = GameManager.Instance.HoopBasket.position;
-                _targetIsBackboard = false;
-
-                shootingSpeed = _zoneConfig.AlmostMin;
-            }
+            if (debugLaunch && !AIBall)
+                Debug.LogWarning("shootingSpeed > maxBackboardSpeed");
         }
 
         if (_diversion == 0) return;
@@ -290,7 +307,6 @@ public class BallController : MonoBehaviour
     public void Shoot(float shootingSpeed)
     {
         //shootingSpeed = customSpeed;
-        if (debugLaunch && !AIBall) Debug.LogError("Speed: " + shootingSpeed);
         _isFlying = true; // To check on endgame
         _state = BallState.Shooting;
         transform.SetParent(null);
@@ -300,6 +316,7 @@ public class BallController : MonoBehaviour
 
         _shootingSpeed = shootingSpeed;
         UpdateTarget(ref shootingSpeed);
+        if (debugLaunch && !AIBall) Debug.LogError("Speed: " + shootingSpeed);
 
         // Ensure collider active
         _ballCollider.enabled = true;
@@ -361,6 +378,9 @@ public class BallController : MonoBehaviour
             _ballRb.velocity = fallbackDir * Mathf.Max(3f, launchSpeed * 0.6f) * selectedStrengthMult;
             if (debugLaunch) Debug.LogWarning("[Ball] fallback launch used");
         }
+
+        Vector3 spinAxis = Vector3.Cross(Vector3.up, launchVelocity.normalized);
+        _ballRb.angularVelocity = spinAxis * 15f;
     }
 
     // Called before the shot, when the caracter is animating the shot
@@ -461,30 +481,14 @@ public class BallController : MonoBehaviour
     {
         GameManager.Instance.SFXManager.PlayOneShot(bounce);
 
-        if (collision.collider.GetComponent<BallController>())
+        if (AIBall)
         {
-            Physics.IgnoreCollision(collision.collider, _ballCollider);
-            return;
-        } else
-        {
-            if (AIBall)
-            {
-                Opponent.Drible();
-            }
+            Opponent.Drible();
         }
 
         if (collision.collider.CompareTag(_groundTag))
         {
-            // Prepare next shot if game still playing
-            if (_hoopEntered)
-                GameManager.Instance.ResetGameState(AIBall);
-            else
-                GameManager.Instance.Lose(AIBall);  // To manage fireball shut off
-
-            _isFlying = false; // To check on endgame
-            _groundWasTouched = true;
-
-            ResetState();
+            ResetBallState();
 
             return;
         }
@@ -501,7 +505,28 @@ public class BallController : MonoBehaviour
         if (!collision.collider.transform.parent.CompareTag(_rimTag) || _rimWasTouched) return;
         _rimWasTouched = true;
 
-        GameManager.Instance.SFXManager.PlayOneShot(rim);
+        if (_rimWasTouched) GameManager.Instance.SFXManager.PlayOneShot(rim);
+    }
+
+    private void ResetBallState()
+    {
+        // Prepare next shot if game still playing
+        if (_hoopEntered)
+            GameManager.Instance.ResetGameState(AIBall);
+        else
+            GameManager.Instance.Lose(AIBall);  // To manage fireball shut off
+
+        _isFlying = false; // To check on endgame
+        _groundWasTouched = true;
+
+        ResetState();
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (!other.CompareTag(_courtTag)) return;
+
+        ResetBallState();
     }
 
     private void OnTriggerEnter(Collider other)
@@ -514,12 +539,15 @@ public class BallController : MonoBehaviour
         {
             points = BackboardController.Instance.GetValue();
             BackboardController.Instance.ResetValue(); // Reset backboard bonus after scoring
+            if (!AIBall && points > 2) GameManager.Instance.SFXManager.PlayOneShot(wow);
         }
         else if (_rimWasTouched) points = 2;
         else if (!_rimWasTouched && CameraController.Instance && !AIBall) StartCoroutine(CameraController.Instance.Shake(cameraShakeDuration, cameraShakeMagintude));
 
         _hoopEntered = true;
         GameManager.Instance.SFXManager.PlayOneShot(hoop);
+        //GameManager.Instance.NetAnimator.SetTrigger("score");
+        GameManager.Instance.WaveNet();
         // Show different effects for 2 points or 3 points shot
         StartCoroutine(GameManager.Instance.SpawnShotParticles(transform.position, _rimWasTouched ? (int)ShotType.Rim : (int)ShotType.Hoop));
         GameManager.Instance.Win(points, AIBall);

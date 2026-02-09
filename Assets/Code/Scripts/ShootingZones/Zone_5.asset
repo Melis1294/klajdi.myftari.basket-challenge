@@ -18,11 +18,11 @@ MonoBehaviour:
   BackboardArcPreference: 0.65
   StrengthMultiplier: 1
   BackBoardMaxLaunch: 7
-  OpponentHoopLaunchScaleOffset: 0.05
-  OpponentHoopArcPreferenceOffset: 0.01
-  OpponentBackBoardLaunchScaleOffset: 0.5
-  OpponentBackBoardArcPreferenceOffset: 0
-  OpponentBackBoardMaxLaunch: 7.2
+  OpponentHoopLaunchScaleOffset: 0.01
+  OpponentHoopArcPreferenceOffset: 0.015
+  OpponentBackBoardLaunchScaleOffset: 0.01
+  OpponentBackBoardArcPreferenceOffset: 0.15
+  OpponentBackBoardMaxLaunch: 8.35
   PosY: 4.7
   Height: 8
   AlmostMin: 42.3

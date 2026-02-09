@@ -4,12 +4,11 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-//TODO: Fix balls collision between each other
-//TODO: Fix ball collision outside map (respawn) -> Consider using Layers
-
 public class GameManager : MonoBehaviour
 {
     public Transform HoopBasket;
+    //public Cloth NetCloth;
+    public Animator NetAnimator;
     public Transform CameraTarget;
     public Transform Backboard;
     public Transform ShootingZone;
@@ -21,18 +20,23 @@ public class GameManager : MonoBehaviour
     [SerializeField] int currentPositionPlayer = 0;
     public RectTransform FillHoop;
     [SerializeField] private GameObject[] balls;
+    [SerializeField] private GameObject tutorialScreen;
+    [SerializeField] private GameObject videoMapWebGL;
     private Transform _characterInstance;
     private Transform _characterHand;
     private Transform[] _shootingZones;
     private Transform[] _endGameZones;
     private BallController _ballInstance;
     private BallController _opponentBallInstance;
+    public Transform OpponentZone;
 
     public int TotalScore { get;  private set; }
 
     // UI
     [SerializeField] private TextMeshProUGUI totalScoreText;
     [SerializeField] private TextMeshPro scoreText;
+    [SerializeField] private Button pauseGameButton;
+    [SerializeField] private Button resumeGameButton;
     [SerializeField] private Button endGameButton;
     [SerializeField] private Button retryButton;
     [SerializeField] private Button menuButton;
@@ -43,9 +47,8 @@ public class GameManager : MonoBehaviour
 
     // Game mode
     public bool IsSinglePlayer;
-    public Vector3 OpponentPositionOffset = new Vector3(-0.69f, 0, 0.27f);
+    [SerializeField] Vector3 OpponentPositionOffset = new Vector3(-1.5f, 0, 0.3f);
     public int CurrentPositionOpponent = 0;
-    [SerializeField] private TextMeshProUGUI opponentScoreText;
     public int OpponentScore { get; private set; }
     private Transform _opponentInstance;
 
@@ -85,7 +88,7 @@ public class GameManager : MonoBehaviour
             return;
         }
         Instance = this;
-        
+
         UpdateGameState(GameState.Startup);
 
         SetupZones();
@@ -96,13 +99,17 @@ public class GameManager : MonoBehaviour
         if (FireballService == null) throw new NullReferenceException("FireballService not found!");
         if (SceneService == null) throw new NullReferenceException("SceneService not found!!!");
 
-        endGameButton.onClick.AddListener(() => ResetBall(true)); //SceneService.BackToMainMenu());
+        pauseGameButton.onClick.AddListener(() => UpdateGameState(GameState.Pause));
+        resumeGameButton.onClick.AddListener(() => UpdateGameState(GameState.Play));
+        endGameButton.onClick.AddListener(() => SceneService.BackToMainMenu());
         retryButton.onClick.AddListener(() => SceneService.StartGame());
         menuButton.onClick.AddListener(() => SceneService.BackToMainMenu());
         
         // To know if players shot last balls on timer end
         _lastBallsShotCounter = 0;
     }
+
+    // Setup ball colliders to interact with the basketball net
 
     private void OnDestroy()
     {
@@ -113,7 +120,13 @@ public class GameManager : MonoBehaviour
     public void ResetBall(bool aiState = false)
     {
         ResetGameState(aiState);
-        _ballInstance.ResetState();
+        _opponentBallInstance.ResetState();
+    }
+
+    public void ResetPositionOpponent()
+    {
+        CurrentPositionOpponent = 0;
+        ResetBall(true);
     }
 
     private void SetupZones()
@@ -154,10 +167,9 @@ public class GameManager : MonoBehaviour
         totalScoreText.text = string.Format("Score: {0}", TotalScore);
         if (!IsSinglePlayer) {
             OpponentScore = totalScores[1];
-            opponentScoreText.text = string.Format("AI Score: {0}", OpponentScore);
+            totalScoreText.text = string.Format("{0} - {1}", TotalScore, OpponentScore);
             SpawnOpponent(); 
         }
-        opponentScoreText.gameObject.SetActive(!IsSinglePlayer);
     }
 
     void RecalculatePlayerShootingZone()
@@ -167,24 +179,6 @@ public class GameManager : MonoBehaviour
         if (provider != null)
         {
             _ballInstance.ApplyZoneConfig(provider.Config, provider.BackboardTarget);
-
-            //ShootingZoneConfig _zoneConfig = provider.Config;
-            //if (_zoneConfig != null)
-            //{
-            //    // Update hoop slider area
-            //    // Height
-            //    Vector2 size = FillHoop.sizeDelta;
-            //    size.y = provider.Config.Height;
-            //    FillHoop.sizeDelta = size;
-
-            //    //PosY
-            //    Vector2 pos = FillHoop.anchoredPosition;
-            //    pos.y = provider.Config.PosY;
-            //    FillHoop.anchoredPosition = pos;
-
-            //    Debug.Log("Updated Hoop Slider AREA");
-            //}
-            Debug.Log("Player BackboardTarget: " + "X: " + provider.BackboardTarget.position.x + ",Y: " + provider.BackboardTarget.position.y + ",Z: " + provider.BackboardTarget.position.z);
         }
     }
 
@@ -261,6 +255,8 @@ public class GameManager : MonoBehaviour
     // Called on first shot setup and in next ones, from both player and opponent
     void UpdatePosition(ref int currentPosition, Transform playerInstance, Vector3 offset)
     {
+        Debug.LogWarning("Offset: " + offset.x + ", " + offset.z);
+
         if (currentPosition >= _shootingZones.Length) currentPosition = 0;
         Vector3 newShootingZone = _shootingZones[currentPosition].position;
         Vector3 targetPos = new Vector3(newShootingZone.x, 0f, newShootingZone.z) + offset;
@@ -301,12 +297,13 @@ public class GameManager : MonoBehaviour
             try
             {
                 anim.SetBool("shoot", false);
-                //anim.SetBool("dribble", true);
                 anim.Update(0f); // apply immediately
             }
             catch (Exception)
             {
                 // in case parameters don't exist, ignore
+                Debug.LogError("No animator found!");
+                return;
             }
         }
     }
@@ -387,13 +384,19 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public void WaveNet()
+    {
+        if (NetAnimator == null) return;
+
+        NetAnimator.Play("net_score", 0, 0f);
+    }
+
     // Called on shot succeeded, for AI and player
     public void Win(int points, bool aiWon)
     {
         if (aiWon)
         {
             OpponentScore += points;
-            opponentScoreText.text = string.Format("AI Score: {0}", OpponentScore);
             CurrentPositionOpponent++;  // Update opponent position for next shot
         } else
         {
@@ -402,18 +405,19 @@ public class GameManager : MonoBehaviour
             scoreText.text = string.Format("+{0} points!", points);  // Show single score UI (only player)
             scoreText.gameObject.SetActive(true);
             TotalScore += points;
-            totalScoreText.text = string.Format("Score: {0}", TotalScore);
             currentPositionPlayer++; // Update player position for next shot
 
             // Manage fireOn mode
             FireballService?.AddScore((float)points / 8);
         }
+        // Update score
+        totalScoreText.text = string.Format("{0} - {1}", TotalScore, OpponentScore);
     }
 
     public void PlayerWins()
     {
-        currentPositionPlayer++;
-        ResetBall();
+        CurrentPositionOpponent++;
+        ResetBall(true);
     }
 
     public void Lose(bool aiLost)
@@ -469,12 +473,47 @@ public class GameManager : MonoBehaviour
     public void UpdateGameState(GameState newState)
     {
         State = newState;
+        bool isPaused = State == GameState.Pause;
+
         if (InputService != null)
             InputService.Enabled = State == GameState.Play;
         else
             InputManager.Instance.enabled = State == GameState.Play; // fallback to existing singleton if adapter not assigned
 
+        // Time
+        Time.timeScale = isPaused ? 0f : 1f;
+        // Audio (optional but recommended)
+        AudioListener.pause = isPaused;
+
         OnGameStateChanged?.Invoke(newState);
+    }
+
+    public void EndTutorial()
+    {
+#if UNITY_IOS || UNITY_ANDROID
+        if (tutorialScreen != null)
+        {
+            tutorialScreen.SetActive(false);
+            PlayerPrefs.SetInt("TutorialDone", 1);
+        }
+#else
+        if (videoMapWebGL != null)
+        {
+            videoMapWebGL.SetActive(false);
+            PlayerPrefs.SetInt("TutorialDone", 1);
+        }
+#endif
+    }
+
+    public void StartTutorial()
+    {
+#if UNITY_IOS || UNITY_ANDROID
+        if (tutorialScreen != null)
+            tutorialScreen.SetActive(true);
+#else
+        if (videoMapWebGL != null)
+            videoMapWebGL.SetActive(true); // Skip tutorial on non-mobile platforms
+#endif
     }
 
     public enum GameState
