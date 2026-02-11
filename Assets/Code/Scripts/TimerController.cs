@@ -89,6 +89,8 @@ public class TimerController : MonoBehaviour
             return;
         }
 
+        if (!TutorialCompleted()) return;
+
         // Manage game timer
         if (RemainingTime > 0)
         {

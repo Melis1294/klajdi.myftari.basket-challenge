@@ -4,6 +4,7 @@ using UnityEngine.SceneManagement;
 public class SceneController : MonoBehaviour
 {
     [SerializeField] private float _retryTimer = 60f;
+    [SerializeField] private GameObject quitButton;
     public static SceneController Instance { get; private set; }
     private int _playerTotalScore;
     private int _opponentTotalScore;
@@ -16,6 +17,10 @@ public class SceneController : MonoBehaviour
 
         Time.timeScale = 1f;
         AudioListener.pause = false;
+
+#if UNITY_IOS || UNITY_ANDROID || UNITY_WEBGL
+            quitButton.SetActive(false);
+#endif
     }
 
     public void SetScores(int playerScore, int opponentScore = 0)
@@ -34,4 +39,10 @@ public class SceneController : MonoBehaviour
     public void StartGame() => SceneManager.LoadScene(1);
 
     public void BackToMainMenu() => SceneManager.LoadScene(0);
+
+
+    public void QuitGame()
+    {
+        Application.Quit();
+    }
 }

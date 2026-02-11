@@ -62,6 +62,7 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance { get; private set; }
 
     public static bool GameIsOver() => Instance != null && Instance.State == GameState.GameOver;
+    public static bool TutorialCompleted() => PlayerPrefs.GetInt("TutorialDone") == 1;
 
     Animator characterAnimator;
 

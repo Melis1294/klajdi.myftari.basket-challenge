@@ -157,7 +157,7 @@ public class InputManager : MonoBehaviour
 
     void ShootAndResetParams()
     {
-#if UNITY_WEBGL
+#if UNITY_WEBGL || UNITY_WINDOWS || UNITY_STANDALONE
         if (_firstShot)
         {
             GameManager.Instance.EndTutorial();

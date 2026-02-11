@@ -22,7 +22,7 @@ public class AIController : MonoBehaviour
     {
         if (GameManager.Instance.State != GameManager.GameState.Play) return;
 
-        if (hasBall) ManageShot();
+        if (hasBall && GameManager.TutorialCompleted()) ManageShot();
     }
 
     void ManageShot()

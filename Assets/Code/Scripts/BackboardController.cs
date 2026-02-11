@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using static GameManager;
 
 public class BackboardController : MonoBehaviour
 {
@@ -44,7 +45,7 @@ public class BackboardController : MonoBehaviour
 
     void Update()
     {
-        if (GameManager.Instance.State != GameManager.GameState.Play) return;
+        if (GameManager.Instance.State != GameState.Play || !TutorialCompleted()) return;
 
         float time = Time.timeSinceLevelLoad;
 
